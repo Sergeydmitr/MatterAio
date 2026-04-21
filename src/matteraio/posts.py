@@ -13,11 +13,13 @@ class PostsResource:
             channel_id: str,
             message: str,
             root_id: str | None = None,
+            file_ids: list[str] | None = None,
     ) -> Post:
         payload = PostCreateRequest(
             channel_id=channel_id,
             message=message,
             root_id=root_id,
+            file_ids=file_ids,
         )
         return await self._client._request_model(
             "POST",

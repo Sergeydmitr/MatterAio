@@ -30,12 +30,14 @@ class Post(MattermostModel):
     message: str
     user_id: str | None = None
     root_id: str | None = None
+    file_ids: list[str] = []
 
 
 class PostCreateRequest(MattermostModel):
     channel_id: str
     message: str
     root_id: str | None = None
+    file_ids: list[str] | None = None
 
 
 class ErrorResponse(MattermostModel):

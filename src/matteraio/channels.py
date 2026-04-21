@@ -10,6 +10,13 @@ class ChannelsResource:
     async def get(self, channel_id: str) -> Channel:
         return await self._client._request_model("GET", f"/channels/{channel_id}", Channel)
 
+    async def get_by_name(self, team_id: str, channel_name: str) -> Channel:
+        return await self._client._request_model(
+            "GET",
+            f"/teams/{team_id}/channels/name/{channel_name}",
+            Channel,
+        )
+
     async def list(
             self,
             team_id: str,

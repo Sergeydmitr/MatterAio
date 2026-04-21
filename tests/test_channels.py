@@ -77,3 +77,30 @@ class ChannelsResourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(channels), 2)
         self.assertEqual(channels[0].name, "engineering")
         self.assertEqual(channels[1].type, "P")
+
+    async def test_get_channel_by_name_uses_team_lookup_endpoint(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.method, "GET")
+            self.assertEqual(request.url.path, "/api/v4/teams/team-1/channels/name/town-square")
+            return httpx.Response(
+                200,
+                json={
+                    "id": "channel-1",
+                    "team_id": "team-1",
+                    "name": "town-square",
+                    "display_name": "Town Square",
+                    "type": "O",
+                },
+            )
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+                "https://mattermost.example.com",
+                "token-123",
+                transport=transport,
+        ) as client:
+            channel = await client.channels.get_by_name("team-1", "town-square")
+
+        self.assertEqual(channel.id, "channel-1")
+        self.assertEqual(channel.name, "town-square")
