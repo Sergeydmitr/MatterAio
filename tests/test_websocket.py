@@ -293,7 +293,7 @@ class MattermostWebSocketClientTests(unittest.IsolatedAsyncioTestCase):
                             "channel_display_name": "Town Square",
                             "channel_name": "town-square",
                             "channel_type": "O",
-                            "mentions": "[\"user-1\"]",
+                            "mentions": '["user-1"]',
                             "post": json.dumps(
                                 {
                                     "id": "post-1",
