@@ -45,9 +45,26 @@ class WebSocketConnectionError(WebSocketError):
     pass
 
 
+class WebSocketDisconnectedError(WebSocketConnectionError):
+    def __init__(
+        self,
+        message: str,
+        *,
+        close_code: int | None = None,
+        close_reason: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.close_code = close_code
+        self.close_reason = close_reason
+
+
 class WebSocketNotConnectedError(WebSocketError):
     pass
 
 
 class WebSocketProtocolError(WebSocketError):
+    pass
+
+
+class WebSocketTimeoutError(WebSocketError):
     pass

@@ -143,28 +143,31 @@ MattermostWebSocketClient(
     ping_timeout: float | None = 20.0,
     close_timeout: float = 10.0,
     max_size: int | None = 1_048_576,
+    reconnect_initial_delay: float = 1.0,
+    reconnect_max_delay: float = 16.0,
+    reconnect_max_attempts: int | None = None,
     additional_headers: dict[str, str] | None = None,
 )
 ```
 
 Notes:
-
 - the WebSocket URL is derived from `base_url` as `/api/v4/websocket`
 - authentication is explicit and happens after `connect()`
-- the current stage provides a minimal connection layer only; automatic reconnect is not implemented yet
+- reconnect is explicit via `reconnect()`
+- keepalive uses the underlying library ping configuration plus an explicit `ping()` method
 
 Lifecycle methods:
-
 - `async with MattermostWebSocketClient(...) as client`
 - `await client.connect()`
+- `await client.reconnect()`
 - `await client.aclose()`
 
 Core methods:
-
 - `await client.authenticate() -> int`
 - `await client.send_command(action, data=None) -> int`
-- `await client.receive_json() -> dict[str, Any]`
-- `await client.receive_message() -> WebSocketMessage`
+- `await client.ping(data=None) -> float`
+- `await client.receive_json(timeout=None) -> dict[str, Any]`
+- `await client.receive_message(timeout=None) -> WebSocketMessage`
 
 ### `client.users`
 
@@ -203,8 +206,7 @@ channels = await client.channels.list("team-id", page=0, per_page=50)
 
 ### `client.posts`
 
-####
-`await client.posts.create(*, channel_id: str, message: str, root_id: str | None = None, file_ids: list[str] | None = None) -> Post`
+#### `await client.posts.create(*, channel_id: str, message: str, root_id: str | None = None, file_ids: list[str] | None = None) -> Post`
 
 Create a post in a channel.
 
@@ -227,8 +229,7 @@ reply = await client.posts.create(
 
 ### `client.files`
 
-####
-`await client.files.upload(*, channel_id: str, filename: str, content: bytes, content_type: str = "application/octet-stream", client_id: str | None = None) -> FileUploadResponse`
+#### `await client.files.upload(*, channel_id: str, filename: str, content: bytes, content_type: str = "application/octet-stream", client_id: str | None = None) -> FileUploadResponse`
 
 Upload a file with multipart form data.
 
@@ -283,8 +284,10 @@ The client raises these exceptions:
 - `RateLimitError` — rate limiting (`429`)
 - `WebSocketError` — base exception for WebSocket-specific failures
 - `WebSocketConnectionError` — connection open/send/receive failure
+- `WebSocketDisconnectedError` — the server closed the connection; includes `close_code` and `close_reason`
 - `WebSocketNotConnectedError` — command or receive attempted before `connect()`
 - `WebSocketProtocolError` — invalid or unexpected WebSocket payload
+- `WebSocketTimeoutError` — recv timeout expired while waiting for a message
 
 `ApiError` includes:
 
@@ -316,10 +319,11 @@ Implemented resources:
 - channels: `get`, `get_by_name`, `list`
 - posts: `create`
 - files: `upload`
-- websocket: `connect`, `authenticate`, `send_command`, `receive_json`, `receive_message`
+- websocket: `connect`, `reconnect`, `authenticate`, `send_command`, `ping`, `receive_json`, `receive_message`
 
 Not implemented yet:
 
 - broader channel, team, user, and post APIs
-- websocket reconnect/backoff and richer event typing
+- richer event typing for important Mattermost events
+- live integration tests against a real Mattermost server
 - higher-level workflow helpers

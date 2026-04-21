@@ -8,9 +8,11 @@ from .exceptions import (
     RateLimitError,
     TransportError,
     WebSocketConnectionError,
+    WebSocketDisconnectedError,
     WebSocketError,
     WebSocketNotConnectedError,
     WebSocketProtocolError,
+    WebSocketTimeoutError,
 )
 from .models import Channel, FileInfo, FileUploadResponse, Post, PostCreateRequest, User
 from .websocket import MattermostWebSocketClient
@@ -33,8 +35,10 @@ __all__ = [
     "WebSocketBroadcast",
     "WebSocketCommand",
     "WebSocketConnectionError",
+    "WebSocketDisconnectedError",
     "WebSocketError",
     "WebSocketMessage",
     "WebSocketNotConnectedError",
     "WebSocketProtocolError",
+    "WebSocketTimeoutError",
 ]
