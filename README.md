@@ -84,8 +84,8 @@ async def main() -> None:
 
     try:
         while True:
-            message = await client.receive_message()
-            print(message.event, message.status, message.data)
+            event = await client.receive_event()
+            print(type(event).__name__, getattr(event, "event", None))
     finally:
         await client.aclose()
 
@@ -168,6 +168,11 @@ Core methods:
 - `await client.ping(data=None) -> float`
 - `await client.receive_json(timeout=None) -> dict[str, Any]`
 - `await client.receive_message(timeout=None) -> WebSocketMessage`
+- `await client.receive_event(timeout=None) -> TypedWebSocketEvent | WebSocketMessage`
+
+Typed event parsing:
+- `receive_message()` always returns the generic `WebSocketMessage`
+- `receive_event()` returns typed models for supported events and falls back to `WebSocketMessage` for unknown events
 
 ### `client.users`
 
@@ -269,6 +274,10 @@ Current typed response/request models include:
 - `WebSocketBroadcast`
 - `WebSocketCommand`
 - `WebSocketMessage`
+- `HelloEvent`
+- `PostedEvent`
+- `StatusChangeEvent`
+- `TypedWebSocketEvent`
 
 Pydantic models ignore unknown Mattermost fields, so the client can parse larger server responses without requiring
 every field to be modeled.
@@ -320,6 +329,7 @@ Implemented resources:
 - posts: `create`
 - files: `upload`
 - websocket: `connect`, `reconnect`, `authenticate`, `send_command`, `ping`, `receive_json`, `receive_message`
+- typed websocket events: `hello`, `posted`, `status_change`
 
 Not implemented yet:
 

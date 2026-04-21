@@ -10,7 +10,12 @@ from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import ConnectionClosed, InvalidURI, WebSocketException
 
 from .config import MattermostConfig
-from .events import WebSocketCommand, WebSocketMessage
+from .events import (
+    TypedWebSocketEvent,
+    WebSocketCommand,
+    WebSocketMessage,
+    parse_websocket_event,
+)
 from .exceptions import (
     WebSocketConnectionError,
     WebSocketDisconnectedError,
@@ -193,6 +198,13 @@ class MattermostWebSocketClient:
 
     async def receive_message(self, *, timeout: float | None = None) -> WebSocketMessage:
         return WebSocketMessage.model_validate(await self.receive_json(timeout=timeout))
+
+    async def receive_event(
+        self,
+        *,
+        timeout: float | None = None,
+    ) -> TypedWebSocketEvent | WebSocketMessage:
+        return parse_websocket_event(await self.receive_message(timeout=timeout))
 
     def _next_seq(self) -> int:
         self._seq += 1

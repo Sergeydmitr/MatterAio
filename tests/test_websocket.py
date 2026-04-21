@@ -4,15 +4,19 @@ import asyncio
 import json
 import unittest
 from collections.abc import Awaitable
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 from matteraio import (
+    HelloEvent,
     MattermostWebSocketClient,
+    PostedEvent,
     WebSocketDisconnectedError,
+    WebSocketMessage,
     WebSocketNotConnectedError,
     WebSocketProtocolError,
     WebSocketTimeoutError,
+    parse_websocket_event,
 )
 
 
@@ -240,3 +244,104 @@ class MattermostWebSocketClientTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(exc_info.exception.close_code, 1001)
         self.assertEqual(exc_info.exception.close_reason, "server restart")
+
+    async def test_receive_event_parses_hello_event(self) -> None:
+        fake_connection = FakeWebSocketConnection(
+            incoming=[
+                json.dumps(
+                    {
+                        "event": "hello",
+                        "data": {
+                            "connection_id": "conn-1",
+                            "server_version": "11.6.0",
+                        },
+                        "broadcast": {
+                            "user_id": "user-1",
+                            "channel_id": "",
+                            "team_id": "",
+                            "connection_id": "",
+                            "omit_connection_id": "",
+                        },
+                        "seq": 7,
+                    }
+                )
+            ]
+        )
+
+        async def fake_connect(uri: str, **kwargs: Any) -> FakeWebSocketConnection:
+            return fake_connection
+
+        with patch("matteraio.websocket.connect", new=fake_connect):
+            client = MattermostWebSocketClient(
+                "https://mattermost.example.com",
+                "token-123",
+            )
+            await client.connect()
+            event = cast(HelloEvent, await client.receive_event())
+
+        self.assertIsInstance(event, HelloEvent)
+        self.assertEqual(event.data.connection_id, "conn-1")
+        self.assertEqual(event.seq, 7)
+
+    async def test_receive_event_parses_posted_event(self) -> None:
+        fake_connection = FakeWebSocketConnection(
+            incoming=[
+                json.dumps(
+                    {
+                        "event": "posted",
+                        "data": {
+                            "channel_display_name": "Town Square",
+                            "channel_name": "town-square",
+                            "channel_type": "O",
+                            "mentions": "[\"user-1\"]",
+                            "post": json.dumps(
+                                {
+                                    "id": "post-1",
+                                    "channel_id": "channel-1",
+                                    "message": "hello",
+                                    "user_id": "user-2",
+                                }
+                            ),
+                            "sender_name": "alice",
+                            "set_online": True,
+                            "team_id": "team-1",
+                        },
+                        "broadcast": {
+                            "channel_id": "channel-1",
+                            "user_id": "",
+                        },
+                        "seq": 8,
+                    }
+                )
+            ]
+        )
+
+        async def fake_connect(uri: str, **kwargs: Any) -> FakeWebSocketConnection:
+            return fake_connection
+
+        with patch("matteraio.websocket.connect", new=fake_connect):
+            client = MattermostWebSocketClient(
+                "https://mattermost.example.com",
+                "token-123",
+            )
+            await client.connect()
+            event = cast(PostedEvent, await client.receive_event())
+
+        self.assertIsInstance(event, PostedEvent)
+        self.assertEqual(event.data.post.id, "post-1")
+        self.assertEqual(event.data.post.message, "hello")
+        self.assertEqual(event.data.mentions, ["user-1"])
+        self.assertEqual(event.data.team_id, "team-1")
+
+    def test_parse_websocket_event_returns_generic_message_for_unknown_event(self) -> None:
+        message = WebSocketMessage.model_validate(
+            {
+                "event": "preferences_changed",
+                "data": {"user_id": "user-1"},
+                "seq": 9,
+            }
+        )
+
+        parsed = parse_websocket_event(message)
+
+        self.assertIs(parsed, message)
