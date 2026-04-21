@@ -1,6 +1,18 @@
 from .client import MattermostClient
 from .config import MattermostConfig
-from .events import WebSocketBroadcast, WebSocketCommand, WebSocketMessage
+from .events import (
+    HelloEvent,
+    HelloEventData,
+    PostedEvent,
+    PostedEventData,
+    StatusChangeEvent,
+    StatusChangeEventData,
+    TypedWebSocketEvent,
+    WebSocketBroadcast,
+    WebSocketCommand,
+    WebSocketMessage,
+    parse_websocket_event,
+)
 from .exceptions import (
     ApiError,
     AuthError,
@@ -23,14 +35,21 @@ __all__ = [
     "Channel",
     "FileInfo",
     "FileUploadResponse",
+    "HelloEvent",
+    "HelloEventData",
     "MattermostClient",
     "MattermostWebSocketClient",
     "MattermostConfig",
     "MattermostError",
+    "PostedEvent",
+    "PostedEventData",
     "Post",
     "PostCreateRequest",
     "RateLimitError",
+    "StatusChangeEvent",
+    "StatusChangeEventData",
     "TransportError",
+    "TypedWebSocketEvent",
     "User",
     "WebSocketBroadcast",
     "WebSocketCommand",
@@ -41,4 +60,5 @@ __all__ = [
     "WebSocketNotConnectedError",
     "WebSocketProtocolError",
     "WebSocketTimeoutError",
+    "parse_websocket_event",
 ]

@@ -1,7 +1,7 @@
 [project]
 name = "matteraio"
-version = "0.1.0"
-description = "Async Python client for the Mattermost REST API."
+version = "0.2.0"
+description = "Async Python client for the Mattermost REST API and WebSocket events."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"
@@ -29,6 +29,9 @@ packages = ["src/matteraio"]
 [tool.pytest.ini_options]
 addopts = "-ra"
 asyncio_mode = "auto"
+markers = [
+    "integration: tests that require a live Mattermost server",
+]
 testpaths = ["tests"]
 
 [tool.ruff]
