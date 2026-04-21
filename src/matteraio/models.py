@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MattermostModel(BaseModel):
@@ -30,7 +30,7 @@ class Post(MattermostModel):
     message: str
     user_id: str | None = None
     root_id: str | None = None
-    file_ids: list[str] = []
+    file_ids: list[str] = Field(default_factory=list)
 
 
 class PostCreateRequest(MattermostModel):
@@ -64,4 +64,4 @@ class FileInfo(MattermostModel):
 
 class FileUploadResponse(MattermostModel):
     file_infos: list[FileInfo]
-    client_ids: list[str] = []
+    client_ids: list[str] = Field(default_factory=list)

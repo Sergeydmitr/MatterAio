@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from .models import Post, PostCreateRequest
+
+if TYPE_CHECKING:
+    from .client import MattermostClient
 
 
 class PostsResource:
-    def __init__(self, client: object) -> None:
+    def __init__(self, client: MattermostClient) -> None:
         self._client = client
 
     async def create(

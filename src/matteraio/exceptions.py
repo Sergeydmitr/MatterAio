@@ -35,3 +35,19 @@ class AuthError(ApiError):
 
 class RateLimitError(ApiError):
     pass
+
+
+class WebSocketError(MattermostError):
+    pass
+
+
+class WebSocketConnectionError(WebSocketError):
+    pass
+
+
+class WebSocketNotConnectedError(WebSocketError):
+    pass
+
+
+class WebSocketProtocolError(WebSocketError):
+    pass

@@ -3,7 +3,6 @@
 Async Python client for the Mattermost REST API.
 
 The library is intentionally small and explicit:
-
 - async-only
 - thin wrapper over Mattermost API v4
 - no convenience methods that combine multiple API calls
@@ -14,6 +13,16 @@ With `uv`:
 
 ```bash
 uv sync
+```
+
+For development:
+
+```bash
+uv sync --all-groups
+uv run ruff format .
+uv run ruff check .
+uv run mypy src tests
+uv run pytest
 ```
 
 From another project:
@@ -38,8 +47,8 @@ from matteraio import MattermostClient
 
 async def main() -> None:
     async with MattermostClient(
-            base_url="https://mattermost.example.com",
-            token="YOUR_BOT_TOKEN",
+        base_url="https://mattermost.example.com",
+        token="YOUR_BOT_TOKEN",
     ) as client:
         me = await client.users.me()
         print(me.username)
@@ -56,9 +65,38 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+Minimal WebSocket usage:
+
+```python
+import asyncio
+
+from matteraio import MattermostWebSocketClient
+
+
+async def main() -> None:
+    client = MattermostWebSocketClient(
+        base_url="https://mattermost.example.com",
+        token="YOUR_BOT_TOKEN",
+    )
+
+    await client.connect()
+    await client.authenticate()
+
+    try:
+        while True:
+            message = await client.receive_message()
+            print(message.event, message.status, message.data)
+    finally:
+        await client.aclose()
+
+
+asyncio.run(main())
+```
+
 ## Design
 
 - `MattermostClient` owns one shared `httpx.AsyncClient`
+- `MattermostWebSocketClient` manages one explicit WebSocket connection
 - resources are exposed as `client.users`, `client.channels`, `client.posts`, `client.files`
 - methods stay close to underlying Mattermost endpoints
 - multi-step workflows are explicit at call site
@@ -72,26 +110,61 @@ Create a client with:
 ```python
 MattermostClient(
     base_url: str,
-token: str,
-*,
-timeout: float = 10.0,
-connect_timeout: float = 5.0,
-max_connections: int = 20,
-max_keepalive_connections: int = 10,
-transport: httpx.AsyncBaseTransport | None = None,
+    token: str,
+    *,
+    timeout: float = 10.0,
+    connect_timeout: float = 5.0,
+    max_connections: int = 20,
+    max_keepalive_connections: int = 10,
+    transport: httpx.AsyncBaseTransport | None = None,
 )
 ```
 
 Notes:
-
 - `base_url` may be either the server root, like `https://mm.example.com`, or a full API base ending in `/api/v4`
 - authentication uses `Authorization: Bearer <token>`
 - the client is intended to be used as an async context manager
 
 Lifecycle methods:
-
 - `async with MattermostClient(...) as client`
 - `await client.aclose()`
+
+### `MattermostWebSocketClient`
+
+Create a WebSocket client with:
+
+```python
+MattermostWebSocketClient(
+    base_url: str,
+    token: str,
+    *,
+    open_timeout: float = 10.0,
+    ping_interval: float | None = 20.0,
+    ping_timeout: float | None = 20.0,
+    close_timeout: float = 10.0,
+    max_size: int | None = 1_048_576,
+    additional_headers: dict[str, str] | None = None,
+)
+```
+
+Notes:
+
+- the WebSocket URL is derived from `base_url` as `/api/v4/websocket`
+- authentication is explicit and happens after `connect()`
+- the current stage provides a minimal connection layer only; automatic reconnect is not implemented yet
+
+Lifecycle methods:
+
+- `async with MattermostWebSocketClient(...) as client`
+- `await client.connect()`
+- `await client.aclose()`
+
+Core methods:
+
+- `await client.authenticate() -> int`
+- `await client.send_command(action, data=None) -> int`
+- `await client.receive_json() -> dict[str, Any]`
+- `await client.receive_message() -> WebSocketMessage`
 
 ### `client.users`
 
@@ -192,6 +265,9 @@ Current typed response/request models include:
 - `PostCreateRequest`
 - `FileInfo`
 - `FileUploadResponse`
+- `WebSocketBroadcast`
+- `WebSocketCommand`
+- `WebSocketMessage`
 
 Pydantic models ignore unknown Mattermost fields, so the client can parse larger server responses without requiring
 every field to be modeled.
@@ -205,6 +281,10 @@ The client raises these exceptions:
 - `ApiError` — non-2xx Mattermost API response
 - `AuthError` — authentication or authorization failure (`401`/`403`)
 - `RateLimitError` — rate limiting (`429`)
+- `WebSocketError` — base exception for WebSocket-specific failures
+- `WebSocketConnectionError` — connection open/send/receive failure
+- `WebSocketNotConnectedError` — command or receive attempted before `connect()`
+- `WebSocketProtocolError` — invalid or unexpected WebSocket payload
 
 `ApiError` includes:
 
@@ -236,9 +316,10 @@ Implemented resources:
 - channels: `get`, `get_by_name`, `list`
 - posts: `create`
 - files: `upload`
+- websocket: `connect`, `authenticate`, `send_command`, `receive_json`, `receive_message`
 
 Not implemented yet:
 
 - broader channel, team, user, and post APIs
-- websocket support
+- websocket reconnect/backoff and richer event typing
 - higher-level workflow helpers

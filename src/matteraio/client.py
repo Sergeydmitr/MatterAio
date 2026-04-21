@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import TracebackType
 from typing import Any, TypeVar
 
 import httpx
@@ -62,7 +63,12 @@ class MattermostClient:
     async def __aenter__(self) -> MattermostClient:
         return self
 
-    async def __aexit__(self, exc_type: object, exc: object, tb: object) -> None:
+    async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: TracebackType | None,
+    ) -> None:
         await self.aclose()
 
     async def aclose(self) -> None:
