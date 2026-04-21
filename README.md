@@ -1,6 +1,6 @@
 # MatterAio
 
-Async Python client for the Mattermost REST API.
+Async Python client for the Mattermost REST API and WebSocket events.
 
 The library is intentionally small and explicit:
 - async-only
@@ -24,6 +24,39 @@ uv run ruff check .
 uv run mypy src tests
 uv run pytest
 ```
+
+## Integration Tests
+
+The repository includes an opt-in live integration setup against a local Mattermost preview server.
+
+Start the local server:
+
+```bash
+docker compose -f docker-compose.integration.yml up -d
+```
+
+Run the live tests:
+
+```bash
+MATTERAIO_RUN_INTEGRATION=1 uv run pytest tests/integration -m integration
+```
+
+Override the default base URL if needed:
+
+```bash
+MATTERAIO_BASE_URL=http://127.0.0.1:8065 MATTERAIO_RUN_INTEGRATION=1 uv run pytest tests/integration -m integration
+```
+
+Stop the local server when you are done:
+
+```bash
+docker compose -f docker-compose.integration.yml down -v
+```
+
+Notes:
+- the live suite is skipped by default during `uv run pytest`
+- the integration fixtures bootstrap their own user, team, and channel with raw REST calls because team APIs are not in the public client yet
+- `docker-compose.integration.yml` uses the official `mattermost/mattermost-preview` image for local testing only
 
 From another project:
 
@@ -330,10 +363,10 @@ Implemented resources:
 - files: `upload`
 - websocket: `connect`, `reconnect`, `authenticate`, `send_command`, `ping`, `receive_json`, `receive_message`
 - typed websocket events: `hello`, `posted`, `status_change`
+- integration coverage: opt-in live REST and WebSocket tests against a local Mattermost instance
 
 Not implemented yet:
 
 - broader channel, team, user, and post APIs
 - richer event typing for important Mattermost events
-- live integration tests against a real Mattermost server
 - higher-level workflow helpers
