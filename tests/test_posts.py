@@ -26,9 +26,9 @@ class PostsResourceTests(unittest.IsolatedAsyncioTestCase):
         transport = httpx.MockTransport(handler)
 
         async with MattermostClient(
-                "https://mattermost.example.com",
-                "token-123",
-                transport=transport,
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
         ) as client:
             post = await client.posts.create(channel_id="channel-1", message="hello")
 
@@ -58,9 +58,9 @@ class PostsResourceTests(unittest.IsolatedAsyncioTestCase):
         transport = httpx.MockTransport(handler)
 
         async with MattermostClient(
-                "https://mattermost.example.com",
-                "token-123",
-                transport=transport,
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
         ) as client:
             post = await client.posts.create(
                 channel_id="channel-1",

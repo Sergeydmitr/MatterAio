@@ -19,16 +19,16 @@ from .exceptions import (
 
 class MattermostWebSocketClient:
     def __init__(
-            self,
-            base_url: str,
-            token: str,
-            *,
-            open_timeout: float = 10.0,
-            ping_interval: float | None = 20.0,
-            ping_timeout: float | None = 20.0,
-            close_timeout: float = 10.0,
-            max_size: int | None = 1_048_576,
-            additional_headers: dict[str, str] | None = None,
+        self,
+        base_url: str,
+        token: str,
+        *,
+        open_timeout: float = 10.0,
+        ping_interval: float | None = 20.0,
+        ping_timeout: float | None = 20.0,
+        close_timeout: float = 10.0,
+        max_size: int | None = 1_048_576,
+        additional_headers: dict[str, str] | None = None,
     ) -> None:
         self.config = MattermostConfig(base_url=base_url, token=token)
         self._open_timeout = open_timeout
@@ -45,10 +45,10 @@ class MattermostWebSocketClient:
         return self
 
     async def __aexit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc: BaseException | None,
-            tb: TracebackType | None,
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
     ) -> None:
         await self.aclose()
 

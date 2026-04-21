@@ -13,13 +13,13 @@ class FilesResource:
         self._client = client
 
     async def upload(
-            self,
-            *,
-            channel_id: str,
-            filename: str,
-            content: bytes,
-            content_type: str = "application/octet-stream",
-            client_id: str | None = None,
+        self,
+        *,
+        channel_id: str,
+        filename: str,
+        content: bytes,
+        content_type: str = "application/octet-stream",
+        client_id: str | None = None,
     ) -> FileUploadResponse:
         data = {"channel_id": channel_id}
         if client_id is not None:

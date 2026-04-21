@@ -29,9 +29,9 @@ class ChannelsResourceTests(unittest.IsolatedAsyncioTestCase):
         transport = httpx.MockTransport(handler)
 
         async with MattermostClient(
-                "https://mattermost.example.com",
-                "token-123",
-                transport=transport,
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
         ) as client:
             channel = await client.channels.get("channel-1")
 
@@ -68,9 +68,9 @@ class ChannelsResourceTests(unittest.IsolatedAsyncioTestCase):
         transport = httpx.MockTransport(handler)
 
         async with MattermostClient(
-                "https://mattermost.example.com",
-                "token-123",
-                transport=transport,
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
         ) as client:
             channels = await client.channels.list("team-1", page=2, per_page=10)
 
@@ -96,9 +96,9 @@ class ChannelsResourceTests(unittest.IsolatedAsyncioTestCase):
         transport = httpx.MockTransport(handler)
 
         async with MattermostClient(
-                "https://mattermost.example.com",
-                "token-123",
-                transport=transport,
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
         ) as client:
             channel = await client.channels.get_by_name("team-1", "town-square")
 

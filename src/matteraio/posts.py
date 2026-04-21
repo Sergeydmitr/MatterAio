@@ -13,12 +13,12 @@ class PostsResource:
         self._client = client
 
     async def create(
-            self,
-            *,
-            channel_id: str,
-            message: str,
-            root_id: str | None = None,
-            file_ids: list[str] | None = None,
+        self,
+        *,
+        channel_id: str,
+        message: str,
+        root_id: str | None = None,
+        file_ids: list[str] | None = None,
     ) -> Post:
         payload = PostCreateRequest(
             channel_id=channel_id,

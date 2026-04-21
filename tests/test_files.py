@@ -44,9 +44,9 @@ class FilesResourceTests(unittest.IsolatedAsyncioTestCase):
         transport = httpx.MockTransport(handler)
 
         async with MattermostClient(
-                "https://mattermost.example.com",
-                "token-123",
-                transport=transport,
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
         ) as client:
             upload = await client.files.upload(
                 channel_id="channel-1",

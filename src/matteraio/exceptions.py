@@ -11,14 +11,14 @@ class TransportError(MattermostError):
 
 class ApiError(MattermostError):
     def __init__(
-            self,
-            message: str,
-            *,
-            status_code: int,
-            error_id: str | None = None,
-            request_id: str | None = None,
-            detailed_error: str | None = None,
-            retry_after: float | None = None,
+        self,
+        message: str,
+        *,
+        status_code: int,
+        error_id: str | None = None,
+        request_id: str | None = None,
+        detailed_error: str | None = None,
+        retry_after: float | None = None,
     ) -> None:
         super().__init__(message)
         self.message = message

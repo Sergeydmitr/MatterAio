@@ -20,9 +20,9 @@ class MattermostClientTests(unittest.IsolatedAsyncioTestCase):
         transport = httpx.MockTransport(handler)
 
         async with MattermostClient(
-                "https://mattermost.example.com",
-                "token-123",
-                transport=transport,
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
         ) as client:
             user = await client.users.me()
 
@@ -44,9 +44,9 @@ class MattermostClientTests(unittest.IsolatedAsyncioTestCase):
         transport = httpx.MockTransport(handler)
 
         async with MattermostClient(
-                "https://mattermost.example.com",
-                "bad-token",
-                transport=transport,
+            "https://mattermost.example.com",
+            "bad-token",
+            transport=transport,
         ) as client:
             with self.assertRaises(AuthError) as exc_info:
                 await client.users.me()
@@ -62,9 +62,9 @@ class MattermostClientTests(unittest.IsolatedAsyncioTestCase):
         transport = httpx.MockTransport(handler)
 
         async with MattermostClient(
-                "https://mattermost.example.com",
-                "token-123",
-                transport=transport,
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
         ) as client:
             with self.assertRaises(TransportError):
                 await client.users.me()

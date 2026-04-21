@@ -23,11 +23,11 @@ class ChannelsResource:
         )
 
     async def list(
-            self,
-            team_id: str,
-            *,
-            page: int = 0,
-            per_page: int = 60,
+        self,
+        team_id: str,
+        *,
+        page: int = 0,
+        per_page: int = 60,
     ) -> list[Channel]:
         response = await self._client._request(
             "GET",

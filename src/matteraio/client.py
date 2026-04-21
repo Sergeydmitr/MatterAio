@@ -19,15 +19,15 @@ ModelT = TypeVar("ModelT", bound=BaseModel)
 
 class MattermostClient:
     def __init__(
-            self,
-            base_url: str,
-            token: str,
-            *,
-            timeout: float = 10.0,
-            connect_timeout: float = 5.0,
-            max_connections: int = 20,
-            max_keepalive_connections: int = 10,
-            transport: httpx.AsyncBaseTransport | None = None,
+        self,
+        base_url: str,
+        token: str,
+        *,
+        timeout: float = 10.0,
+        connect_timeout: float = 5.0,
+        max_connections: int = 20,
+        max_keepalive_connections: int = 10,
+        transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.config = MattermostConfig(
             base_url=base_url,
@@ -64,10 +64,10 @@ class MattermostClient:
         return self
 
     async def __aexit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc: BaseException | None,
-            tb: TracebackType | None,
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
     ) -> None:
         await self.aclose()
 
@@ -86,11 +86,11 @@ class MattermostClient:
         return response
 
     async def _request_model(
-            self,
-            method: str,
-            path: str,
-            model_type: type[ModelT],
-            **kwargs: Any,
+        self,
+        method: str,
+        path: str,
+        model_type: type[ModelT],
+        **kwargs: Any,
     ) -> ModelT:
         response = await self._request(method, path, **kwargs)
         return model_type.model_validate(response.json())
