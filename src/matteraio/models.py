@@ -13,6 +13,24 @@ class User(MattermostModel):
     email: str | None = None
 
 
+class Team(MattermostModel):
+    id: str
+    name: str
+    display_name: str
+    type: str
+    description: str | None = None
+    company_name: str | None = None
+    allowed_domains: str | None = None
+    invite_id: str | None = None
+    allow_open_invite: bool | None = None
+
+
+class TeamCreateRequest(MattermostModel):
+    name: str
+    display_name: str
+    type: str
+
+
 class Channel(MattermostModel):
     id: str
     team_id: str | None = None
@@ -22,6 +40,15 @@ class Channel(MattermostModel):
     purpose: str | None = None
     header: str | None = None
     total_msg_count: int | None = None
+
+
+class ChannelCreateRequest(MattermostModel):
+    team_id: str
+    name: str
+    display_name: str
+    type: str
+    purpose: str | None = None
+    header: str | None = None
 
 
 class Post(MattermostModel):

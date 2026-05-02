@@ -12,6 +12,7 @@ from .exceptions import ApiError, AuthError, RateLimitError, TransportError
 from .files import FilesResource
 from .models import ErrorResponse
 from .posts import PostsResource
+from .teams import TeamsResource
 from .users import UsersResource
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
@@ -59,6 +60,7 @@ class MattermostClient:
         self.files = FilesResource(self)
         self.users = UsersResource(self)
         self.posts = PostsResource(self)
+        self.teams = TeamsResource(self)
 
     async def __aenter__(self) -> MattermostClient:
         return self

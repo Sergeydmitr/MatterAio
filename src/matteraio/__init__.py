@@ -26,13 +26,24 @@ from .exceptions import (
     WebSocketProtocolError,
     WebSocketTimeoutError,
 )
-from .models import Channel, FileInfo, FileUploadResponse, Post, PostCreateRequest, User
+from .models import (
+    Channel,
+    ChannelCreateRequest,
+    FileInfo,
+    FileUploadResponse,
+    Post,
+    PostCreateRequest,
+    Team,
+    TeamCreateRequest,
+    User,
+)
 from .websocket import MattermostWebSocketClient
 
 __all__ = [
     "ApiError",
     "AuthError",
     "Channel",
+    "ChannelCreateRequest",
     "FileInfo",
     "FileUploadResponse",
     "HelloEvent",
@@ -48,6 +59,8 @@ __all__ = [
     "RateLimitError",
     "StatusChangeEvent",
     "StatusChangeEventData",
+    "Team",
+    "TeamCreateRequest",
     "TransportError",
     "TypedWebSocketEvent",
     "User",

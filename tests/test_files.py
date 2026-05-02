@@ -8,6 +8,52 @@ from matteraio import MattermostClient
 
 
 class FilesResourceTests(unittest.IsolatedAsyncioTestCase):
+    async def test_get_file_info_returns_typed_file_info(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.method, "GET")
+            self.assertEqual(request.url.path, "/api/v4/files/file-1/info")
+            return httpx.Response(
+                200,
+                json={
+                    "id": "file-1",
+                    "user_id": "user-1",
+                    "channel_id": "channel-1",
+                    "name": "note.txt",
+                    "extension": "txt",
+                    "size": 10,
+                    "mime_type": "text/plain",
+                },
+            )
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            file_info = await client.files.info("file-1")
+
+        self.assertEqual(file_info.id, "file-1")
+        self.assertEqual(file_info.name, "note.txt")
+
+    async def test_download_file_returns_response_content(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.method, "GET")
+            self.assertEqual(request.url.path, "/api/v4/files/file-1")
+            return httpx.Response(200, content=b"hello file")
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            content = await client.files.download("file-1")
+
+        self.assertEqual(content, b"hello file")
+
     async def test_upload_file_uses_multipart_form_data(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:
             body = request.read()

@@ -104,3 +104,44 @@ class ChannelsResourceTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(channel.id, "channel-1")
         self.assertEqual(channel.name, "town-square")
+
+    async def test_create_channel_sends_expected_payload(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.method, "POST")
+            self.assertEqual(request.url.path, "/api/v4/channels")
+            self.assertEqual(
+                request.read(),
+                (
+                    b'{"team_id":"team-1","name":"incidents",'
+                    b'"display_name":"Incidents","type":"P","purpose":"On-call"}'
+                ),
+            )
+            return httpx.Response(
+                201,
+                json={
+                    "id": "channel-1",
+                    "team_id": "team-1",
+                    "name": "incidents",
+                    "display_name": "Incidents",
+                    "type": "P",
+                    "purpose": "On-call",
+                },
+            )
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            channel = await client.channels.create(
+                team_id="team-1",
+                name="incidents",
+                display_name="Incidents",
+                type="P",
+                purpose="On-call",
+            )
+
+        self.assertEqual(channel.id, "channel-1")
+        self.assertEqual(channel.type, "P")

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .models import Channel
+from .models import Channel, ChannelCreateRequest
 
 if TYPE_CHECKING:
     from .client import MattermostClient
@@ -20,6 +20,31 @@ class ChannelsResource:
             "GET",
             f"/teams/{team_id}/channels/name/{channel_name}",
             Channel,
+        )
+
+    async def create(
+        self,
+        *,
+        team_id: str,
+        name: str,
+        display_name: str,
+        type: str = "O",
+        purpose: str | None = None,
+        header: str | None = None,
+    ) -> Channel:
+        payload = ChannelCreateRequest(
+            team_id=team_id,
+            name=name,
+            display_name=display_name,
+            type=type,
+            purpose=purpose,
+            header=header,
+        )
+        return await self._client._request_model(
+            "POST",
+            "/channels",
+            Channel,
+            json=payload.model_dump(exclude_none=True),
         )
 
     async def list(

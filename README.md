@@ -130,7 +130,7 @@ asyncio.run(main())
 
 - `MattermostClient` owns one shared `httpx.AsyncClient`
 - `MattermostWebSocketClient` manages one explicit WebSocket connection
-- resources are exposed as `client.users`, `client.channels`, `client.posts`, `client.files`
+- resources are exposed as `client.teams`, `client.users`, `client.channels`, `client.posts`, `client.files`
 - methods stay close to underlying Mattermost endpoints
 - multi-step workflows are explicit at call site
 
@@ -220,6 +220,27 @@ me = await client.users.me()
 print(me.id, me.username, me.email)
 ```
 
+### `client.teams`
+
+#### `await client.teams.get(team_id: str) -> Team`
+
+Get a team by ID.
+
+#### `await client.teams.get_by_name(name: str) -> Team`
+
+Get a team by URL-safe team name.
+
+#### `await client.teams.create(*, name: str, display_name: str, type: str = "O") -> Team`
+
+Create a team. Use `type="O"` for open teams and `type="I"` for invite-only teams.
+
+Example:
+
+```python
+team = await client.teams.get_by_name("engineering")
+team = await client.teams.create(name="ops", display_name="Operations")
+```
+
 ### `client.channels`
 
 #### `await client.channels.get(channel_id: str) -> Channel`
@@ -230,6 +251,10 @@ Get a channel by ID.
 
 Get a channel by channel name inside a team.
 
+#### `await client.channels.create(*, team_id: str, name: str, display_name: str, type: str = "O", purpose: str | None = None, header: str | None = None) -> Channel`
+
+Create a channel. Use `type="O"` for public channels and `type="P"` for private channels.
+
 #### `await client.channels.list(team_id: str, *, page: int = 0, per_page: int = 60) -> list[Channel]`
 
 List channels for a team.
@@ -239,10 +264,19 @@ Example:
 ```python
 channel = await client.channels.get("channel-id")
 channel = await client.channels.get_by_name("team-id", "engineering")
+channel = await client.channels.create(
+    team_id="team-id",
+    name="incidents",
+    display_name="Incidents",
+)
 channels = await client.channels.list("team-id", page=0, per_page=50)
 ```
 
 ### `client.posts`
+
+#### `await client.posts.get(post_id: str, *, include_deleted: bool = False) -> Post`
+
+Get a post by ID.
 
 #### `await client.posts.create(*, channel_id: str, message: str, root_id: str | None = None, file_ids: list[str] | None = None) -> Post`
 
@@ -257,6 +291,7 @@ post = await client.posts.create(
     channel_id="channel-id",
     message="plain message",
 )
+same_post = await client.posts.get(post.id)
 
 reply = await client.posts.create(
     channel_id="channel-id",
@@ -266,6 +301,14 @@ reply = await client.posts.create(
 ```
 
 ### `client.files`
+
+#### `await client.files.info(file_id: str) -> FileInfo`
+
+Get stored file metadata.
+
+#### `await client.files.download(file_id: str) -> bytes`
+
+Download file content as bytes.
 
 #### `await client.files.upload(*, channel_id: str, filename: str, content: bytes, content_type: str = "application/octet-stream", client_id: str | None = None) -> FileUploadResponse`
 
@@ -283,6 +326,8 @@ upload = await client.files.upload(
     content=b"hello",
     content_type="text/plain",
 )
+file_info = await client.files.info(upload.file_infos[0].id)
+content = await client.files.download(file_info.id)
 
 post = await client.posts.create(
     channel_id="channel-id",
@@ -299,7 +344,10 @@ creation inside one call.
 Current typed response/request models include:
 
 - `User`
+- `Team`
+- `TeamCreateRequest`
 - `Channel`
+- `ChannelCreateRequest`
 - `Post`
 - `PostCreateRequest`
 - `FileInfo`
@@ -358,15 +406,16 @@ except TransportError:
 Implemented resources:
 
 - users: `me`
-- channels: `get`, `get_by_name`, `list`
-- posts: `create`
-- files: `upload`
+- teams: `get`, `get_by_name`, `create`
+- channels: `get`, `get_by_name`, `create`, `list`
+- posts: `get`, `create`
+- files: `info`, `download`, `upload`
 - websocket: `connect`, `reconnect`, `authenticate`, `send_command`, `ping`, `receive_json`, `receive_message`
 - typed websocket events: `hello`, `posted`, `status_change`
 - integration coverage: opt-in live REST and WebSocket tests against a local Mattermost instance
 
 Not implemented yet:
 
-- broader channel, team, user, and post APIs
+- broader channel, team, user, post, and file APIs
 - richer event typing for important Mattermost events
 - higher-level workflow helpers

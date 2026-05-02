@@ -41,6 +41,12 @@ async def test_rest_resources_work_against_live_server(
         base_url=integration_workspace["base_url"],
         token=integration_workspace["token"],
     ) as client:
+        team = await client.teams.get(integration_workspace["team_id"])
+        assert team.name == integration_workspace["team_name"]
+
+        named_team = await client.teams.get_by_name(integration_workspace["team_name"])
+        assert named_team.id == integration_workspace["team_id"]
+
         me = await client.users.me()
         assert me.username == integration_workspace["username"]
 
@@ -56,6 +62,13 @@ async def test_rest_resources_work_against_live_server(
         channels = await client.channels.list(integration_workspace["team_id"])
         assert any(item.id == integration_workspace["channel_id"] for item in channels)
 
+        created_channel = await client.channels.create(
+            team_id=integration_workspace["team_id"],
+            name=f"{integration_workspace['channel_name']}-extra",
+            display_name="MatterAio Extra",
+        )
+        assert created_channel.team_id == integration_workspace["team_id"]
+
         upload = await client.files.upload(
             channel_id=integration_workspace["channel_id"],
             filename="integration.txt",
@@ -67,6 +80,12 @@ async def test_rest_resources_work_against_live_server(
         file_info = upload.file_infos[0]
         assert file_info.name == "integration.txt"
 
+        fetched_file_info = await client.files.info(file_info.id)
+        assert fetched_file_info.name == "integration.txt"
+
+        file_content = await client.files.download(file_info.id)
+        assert file_content == b"live integration payload"
+
         post = await client.posts.create(
             channel_id=integration_workspace["channel_id"],
             message="MatterAio live integration post",
@@ -75,6 +94,10 @@ async def test_rest_resources_work_against_live_server(
         assert post.channel_id == integration_workspace["channel_id"]
         assert post.message == "MatterAio live integration post"
         assert post.file_ids == [file_info.id]
+
+        fetched_post = await client.posts.get(post.id)
+        assert fetched_post.id == post.id
+        assert fetched_post.message == post.message
 
 
 async def test_websocket_receives_posted_event_from_live_server(

@@ -12,6 +12,14 @@ class PostsResource:
     def __init__(self, client: MattermostClient) -> None:
         self._client = client
 
+    async def get(self, post_id: str, *, include_deleted: bool = False) -> Post:
+        return await self._client._request_model(
+            "GET",
+            f"/posts/{post_id}",
+            Post,
+            params={"include_deleted": include_deleted},
+        )
+
     async def create(
         self,
         *,
