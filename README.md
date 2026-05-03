@@ -421,6 +421,46 @@ Create a post in a channel.
 
 Use `root_id` for thread replies and `file_ids` for already uploaded files.
 
+#### `await client.posts.update(post_id: str, *, message: str, is_pinned: bool | None = None, has_reactions: bool | None = None, props: dict[str, object] | None = None) -> Post`
+
+Update the full editable post body. Mattermost treats omitted fields as blanks, so this method requires `message`.
+
+#### `await client.posts.patch(post_id: str, *, is_pinned: bool | None = None, message: str | None = None, file_ids: list[str] | None = None, has_reactions: bool | None = None, props: dict[str, object] | None = None) -> Post`
+
+Patch only the provided post fields.
+
+#### `await client.posts.delete(post_id: str) -> StatusOK`
+
+Soft-delete a post.
+
+#### `await client.posts.thread(post_id: str, *, per_page: int | None = None, from_post: str | None = None, from_create_at: int | None = None, from_update_at: int | None = None, direction: str | None = None, skip_fetch_threads: bool | None = None, collapsed_threads: bool | None = None, collapsed_threads_extended: bool | None = None, updates_only: bool | None = None) -> PostList`
+
+Get a post thread. Use `direction="up"` or `direction="down"` for paginated thread reads.
+
+#### `await client.posts.list(channel_id: str, *, page: int | None = None, per_page: int | None = None, since: int | None = None, before: str | None = None, after: str | None = None, include_deleted: bool = False, type: str | None = None) -> PostList`
+
+Get channel post history. `since` cannot be combined with pagination or `before`/`after`.
+
+#### `await client.posts.search(team_id: str, terms: str, *, is_or_search: bool = False, time_zone_offset: int | None = None, include_deleted_channels: bool | None = None, page: int | None = None, per_page: int | None = None) -> PostSearchResponse`
+
+Search team posts using Mattermost search terms, such as `from:alice` or `in:town-square`.
+
+#### `await client.posts.pin(post_id: str) -> StatusOK`
+
+Pin a post to its channel.
+
+#### `await client.posts.unpin(post_id: str) -> StatusOK`
+
+Unpin a post from its channel.
+
+#### `await client.posts.get_by_ids(post_ids: list[str]) -> list[Post]`
+
+Fetch posts by a batch of post IDs.
+
+#### `await client.posts.files_info(post_id: str, *, include_deleted: bool = False) -> list[FileInfo]`
+
+Get file metadata for files attached to a post.
+
 Examples:
 
 ```python
@@ -435,6 +475,12 @@ reply = await client.posts.create(
     message="thread reply",
     root_id="parent-post-id",
 )
+
+history = await client.posts.list("channel-id", page=0, per_page=60)
+thread = await client.posts.thread(post.id, per_page=20, direction="down")
+matches = await client.posts.search("team-id", "from:alice deploy")
+await client.posts.pin(post.id)
+files = await client.posts.files_info(post.id)
 ```
 
 ### `client.files`
@@ -506,6 +552,10 @@ Current typed response/request models include:
 - `Post`
 - `PostCreateRequest`
 - `PostList`
+- `PostUpdateRequest`
+- `PostPatchRequest`
+- `PostSearchRequest`
+- `PostSearchResponse`
 - `FileInfo`
 - `FileUploadResponse`
 - `WebSocketBroadcast`
@@ -567,7 +617,8 @@ Implemented resources:
 - channels: `get`, `get_by_name`, `create`, `list`, `update`, `patch`, `delete`, `restore`, `archive`,
   `unarchive`, `join`, `leave`, `list_members`, `add_member`, `remove_member`, `create_direct`,
   `create_group`, `search`, `search_all`, `search_group`, `stats`, `unread`, `pinned_posts`
-- posts: `get`, `create`
+- posts: `get`, `create`, `update`, `patch`, `delete`, `thread`, `list`, `search`, `pin`, `unpin`,
+  `get_by_ids`, `files_info`
 - files: `info`, `download`, `upload`
 - websocket: `connect`, `reconnect`, `authenticate`, `send_command`, `ping`, `receive_json`, `receive_message`
 - typed websocket events: `hello`, `posted`, `status_change`

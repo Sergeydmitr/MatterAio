@@ -200,6 +200,11 @@ class Post(MattermostModel):
     user_id: str | None = None
     root_id: str | None = None
     file_ids: list[str] = Field(default_factory=list)
+    create_at: int | None = None
+    update_at: int | None = None
+    delete_at: int | None = None
+    is_pinned: bool | None = None
+    has_reactions: bool | None = None
 
 
 class PostCreateRequest(MattermostModel):
@@ -209,12 +214,41 @@ class PostCreateRequest(MattermostModel):
     file_ids: list[str] | None = None
 
 
+class PostUpdateRequest(MattermostModel):
+    id: str
+    message: str
+    is_pinned: bool | None = None
+    has_reactions: bool | None = None
+    props: dict[str, object] | None = None
+
+
+class PostPatchRequest(MattermostModel):
+    is_pinned: bool | None = None
+    message: str | None = None
+    file_ids: list[str] | None = None
+    has_reactions: bool | None = None
+    props: dict[str, object] | None = None
+
+
 class PostList(MattermostModel):
     order: list[str] = Field(default_factory=list)
     posts: dict[str, Post] = Field(default_factory=dict)
     next_post_id: str | None = None
     prev_post_id: str | None = None
     has_next: bool | None = None
+
+
+class PostSearchRequest(MattermostModel):
+    terms: str
+    is_or_search: bool
+    time_zone_offset: int | None = None
+    include_deleted_channels: bool | None = None
+    page: int | None = None
+    per_page: int | None = None
+
+
+class PostSearchResponse(PostList):
+    matches: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class ErrorResponse(MattermostModel):
