@@ -55,6 +55,52 @@ class TeamCreateRequest(MattermostModel):
     type: str
 
 
+class TeamSearchRequest(MattermostModel):
+    term: str
+    page: int | None = None
+    per_page: int | None = None
+    allow_open_invite: bool | None = None
+    group_constrained: bool | None = None
+    exclude_policy_constrained: bool | None = None
+
+
+class TeamUpdateRequest(MattermostModel):
+    id: str
+    display_name: str
+    description: str
+    company_name: str
+    allowed_domains: str
+    invite_id: str
+    allow_open_invite: bool
+
+
+class TeamPatchRequest(MattermostModel):
+    display_name: str | None = None
+    description: str | None = None
+    company_name: str | None = None
+    invite_id: str | None = None
+    allow_open_invite: bool | None = None
+
+
+class TeamMember(MattermostModel):
+    team_id: str
+    user_id: str
+    roles: str
+    delete_at: int | None = None
+    scheme_user: bool | None = None
+    scheme_admin: bool | None = None
+    explicit_roles: str | None = None
+
+
+class TeamMemberAddRequest(MattermostModel):
+    team_id: str
+    user_id: str
+
+
+class TeamMemberRolesRequest(MattermostModel):
+    roles: str
+
+
 class Channel(MattermostModel):
     id: str
     team_id: str | None = None
@@ -97,6 +143,10 @@ class ErrorResponse(MattermostModel):
     detailed_error: str | None = None
     request_id: str | None = None
     status_code: int | None = None
+
+
+class StatusOK(MattermostModel):
+    status: str
 
 
 class FileInfo(MattermostModel):

@@ -55,7 +55,7 @@ docker compose -f docker-compose.integration.yml down -v
 
 Notes:
 - the live suite is skipped by default during `uv run pytest`
-- the integration fixtures bootstrap their own user, team, and channel with raw REST calls because team APIs are not in the public client yet
+- the integration fixtures bootstrap their own user, team, and channel with raw REST calls so setup stays independent from the client under test
 - `docker-compose.integration.yml` uses the official `mattermost/mattermost-preview` image for local testing only
 
 From another project:
@@ -258,11 +258,58 @@ Get a team by URL-safe team name.
 
 Create a team. Use `type="O"` for open teams and `type="I"` for invite-only teams.
 
+#### `await client.teams.list(*, page: int = 0, per_page: int = 60, exclude_policy_constrained: bool = False) -> list[Team]`
+
+List teams visible to the current user.
+
+#### `await client.teams.search(term: str, *, page: int | None = None, per_page: int | None = None, allow_open_invite: bool | None = None, group_constrained: bool | None = None, exclude_policy_constrained: bool | None = None) -> list[Team]`
+
+Search teams by name or display name.
+
+#### `await client.teams.update(team_id: str, *, display_name: str, description: str, company_name: str, allowed_domains: str, invite_id: str, allow_open_invite: bool) -> Team`
+
+Update the full editable team profile.
+
+#### `await client.teams.patch(team_id: str, *, display_name: str | None = None, description: str | None = None, company_name: str | None = None, invite_id: str | None = None, allow_open_invite: bool | None = None) -> Team`
+
+Patch only the provided editable team fields.
+
+#### `await client.teams.delete(team_id: str, *, permanent: bool = False) -> StatusOK`
+
+Soft-delete a team by default. Use `permanent=True` only when the server is configured for permanent team deletion.
+
+#### `await client.teams.restore(team_id: str) -> Team`
+
+Restore a previously soft-deleted team.
+
+#### `await client.teams.list_members(team_id: str, *, page: int = 0, per_page: int = 60, sort: str = "", exclude_deleted_users: bool = False) -> list[TeamMember]`
+
+List team members. Use `sort="Username"` to sort by username.
+
+#### `await client.teams.add_member(team_id: str, user_id: str) -> TeamMember`
+
+Add a user to a team.
+
+#### `await client.teams.get_member(team_id: str, user_id: str) -> TeamMember`
+
+Get a team member. Current team roles are available as `member.roles`.
+
+#### `await client.teams.remove_member(team_id: str, user_id: str) -> StatusOK`
+
+Remove a user from a team.
+
+#### `await client.teams.update_member_roles(team_id: str, user_id: str, roles: str) -> StatusOK`
+
+Overwrite team roles with a space-delimited value such as `"team_user team_admin"`.
+
 Example:
 
 ```python
 team = await client.teams.get_by_name("engineering")
 team = await client.teams.create(name="ops", display_name="Operations")
+teams = await client.teams.search("ops", page=0, per_page=10)
+member = await client.teams.get_member(team.id, "user-id")
+await client.teams.update_member_roles(team.id, "user-id", "team_user team_admin")
 ```
 
 ### `client.channels`
@@ -373,6 +420,13 @@ Current typed response/request models include:
 - `UserSearchRequest`
 - `Team`
 - `TeamCreateRequest`
+- `TeamSearchRequest`
+- `TeamUpdateRequest`
+- `TeamPatchRequest`
+- `TeamMember`
+- `TeamMemberAddRequest`
+- `TeamMemberRolesRequest`
+- `StatusOK`
 - `Channel`
 - `ChannelCreateRequest`
 - `Post`
@@ -433,7 +487,8 @@ except TransportError:
 Implemented resources:
 
 - users: `login`, `me`, `get`, `get_by_username`, `get_by_email`, `search`
-- teams: `get`, `get_by_name`, `create`
+- teams: `get`, `get_by_name`, `create`, `list`, `search`, `update`, `patch`, `delete`, `restore`,
+  `list_members`, `add_member`, `get_member`, `remove_member`, `update_member_roles`
 - channels: `get`, `get_by_name`, `create`, `list`
 - posts: `get`, `create`
 - files: `info`, `download`, `upload`
