@@ -130,7 +130,8 @@ asyncio.run(main())
 
 - `MattermostClient` owns one shared `httpx.AsyncClient`
 - `MattermostWebSocketClient` manages one explicit WebSocket connection
-- resources are exposed as `client.teams`, `client.users`, `client.channels`, `client.posts`, `client.files`
+- resources are exposed as `client.teams`, `client.users`, `client.channels`, `client.posts`,
+  `client.reactions`, `client.files`
 - methods stay close to underlying Mattermost endpoints
 - multi-step workflows are explicit at call site
 
@@ -483,6 +484,32 @@ await client.posts.pin(post.id)
 files = await client.posts.files_info(post.id)
 ```
 
+### `client.reactions`
+
+#### `await client.reactions.add(*, user_id: str, post_id: str, emoji_name: str) -> Reaction`
+
+Add a reaction to a post. `emoji_name` is the Mattermost emoji name, such as `"thumbsup"`.
+
+#### `await client.reactions.remove(user_id: str, post_id: str, emoji_name: str) -> StatusOK`
+
+Remove one user's reaction from a post.
+
+#### `await client.reactions.list(post_id: str) -> list[Reaction]`
+
+List all reactions for a post.
+
+Example:
+
+```python
+reaction = await client.reactions.add(
+    user_id="user-id",
+    post_id="post-id",
+    emoji_name="thumbsup",
+)
+reactions = await client.reactions.list("post-id")
+await client.reactions.remove(reaction.user_id, reaction.post_id, reaction.emoji_name)
+```
+
 ### `client.files`
 
 #### `await client.files.info(file_id: str) -> FileInfo`
@@ -556,6 +583,8 @@ Current typed response/request models include:
 - `PostPatchRequest`
 - `PostSearchRequest`
 - `PostSearchResponse`
+- `Reaction`
+- `ReactionCreateRequest`
 - `FileInfo`
 - `FileUploadResponse`
 - `WebSocketBroadcast`
@@ -619,6 +648,7 @@ Implemented resources:
   `create_group`, `search`, `search_all`, `search_group`, `stats`, `unread`, `pinned_posts`
 - posts: `get`, `create`, `update`, `patch`, `delete`, `thread`, `list`, `search`, `pin`, `unpin`,
   `get_by_ids`, `files_info`
+- reactions: `add`, `remove`, `list`
 - files: `info`, `download`, `upload`
 - websocket: `connect`, `reconnect`, `authenticate`, `send_command`, `ping`, `receive_json`, `receive_message`
 - typed websocket events: `hello`, `posted`, `status_change`

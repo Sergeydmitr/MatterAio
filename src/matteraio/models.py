@@ -251,6 +251,19 @@ class PostSearchResponse(PostList):
     matches: dict[str, list[str]] = Field(default_factory=dict)
 
 
+class Reaction(MattermostModel):
+    user_id: str
+    post_id: str
+    emoji_name: str
+    create_at: int | None = None
+
+
+class ReactionCreateRequest(MattermostModel):
+    user_id: str
+    post_id: str
+    emoji_name: str
+
+
 class ErrorResponse(MattermostModel):
     id: str
     message: str
