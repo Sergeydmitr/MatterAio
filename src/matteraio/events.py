@@ -100,7 +100,7 @@ class PostedEvent(WebSocketEventBase):
     data: PostedEventData
 
 
-type TypedWebSocketEvent = HelloEvent | PostedEvent | StatusChangeEvent
+TypedWebSocketEvent = HelloEvent | PostedEvent | StatusChangeEvent
 
 
 def parse_websocket_event(message: WebSocketMessage) -> TypedWebSocketEvent | WebSocketMessage:
