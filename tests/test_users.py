@@ -49,6 +49,53 @@ class UsersResourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(login.user.username, "alice")
         self.assertEqual(user.id, "user-1")
 
+    async def test_login_initializes_cached_session(self) -> None:
+        request_count = 0
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal request_count
+            request_count += 1
+            self.assertEqual(request.url.path, "/api/v4/users/login")
+            return httpx.Response(
+                201,
+                headers={"Token": "session-token"},
+                json={"id": "user-1", "username": "alice", "email": "alice@example.com"},
+            )
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            transport=transport,
+        ) as client:
+            login = await client.users.login(login_id="alice@example.com", password="secret")
+            session = await client.init_session()
+
+        self.assertEqual(login.user.id, "user-1")
+        self.assertEqual(session.user_id, "user-1")
+        self.assertEqual(session.username, "alice")
+        self.assertEqual(request_count, 1)
+
+    async def test_login_is_rejected_when_client_already_has_token(self) -> None:
+        request_count = 0
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal request_count
+            request_count += 1
+            return httpx.Response(500)
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            with self.assertRaises(MattermostError):
+                await client.users.login(login_id="alice@example.com", password="secret")
+
+        self.assertEqual(request_count, 0)
+
     async def test_login_requires_token_header(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(

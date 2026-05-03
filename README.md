@@ -83,8 +83,8 @@ async def main() -> None:
         base_url="https://mattermost.example.com",
         token="YOUR_BOT_TOKEN",
     ) as client:
-        me = await client.users.me()
-        print(me.username)
+        bot = await client.init_session()
+        print(bot.username)
 
         channel = await client.channels.get_by_name("team-id", "town-square")
 
@@ -157,12 +157,26 @@ MattermostClient(
 Notes:
 - `base_url` may be either the server root, like `https://mm.example.com`, or a full API base ending in `/api/v4`
 - authentication uses `Authorization: Bearer <token>` when `token` is provided
-- `client.users.login(...)` can be used to obtain and store a session token after construction
+- `client.users.login(...)` can be used to obtain and store a session token only when the
+  client was constructed without a token
+- token changes are not supported inside one client instance; create a new client for another token
 - the client is intended to be used as an async context manager
 
 Lifecycle methods:
 - `async with MattermostClient(...) as client`
+- `await client.init_session() -> BotSession`
+- `client.require_session() -> BotSession`
 - `await client.aclose()`
+
+`init_session()` fetches `/users/me` once and caches the authenticated bot user for the lifetime of the client.
+`require_session()` returns the cached session or raises `MattermostError` if `init_session()` or `login()` has not run.
+
+Example:
+
+```python
+bot = await client.init_session()
+await client.reactions.add(user_id=bot.user_id, post_id="post-id", emoji_name="eyes")
+```
 
 ### `MattermostWebSocketClient`
 
@@ -213,8 +227,9 @@ Typed event parsing:
 
 #### `await client.users.login(*, login_id: str, password: str, token: str | None = None) -> LoginResponse`
 
-Log in with email, username, or LDAP ID. The returned `LoginResponse.token` is also stored on the client, so later REST
-calls use the session token automatically.
+Log in with email, username, or LDAP ID. The returned `LoginResponse.token` is stored on clients constructed without a
+token, so later REST calls use the session token automatically. The logged-in user is also cached as the current
+`BotSession`.
 
 #### `await client.users.me() -> User`
 

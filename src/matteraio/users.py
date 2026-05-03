@@ -21,6 +21,7 @@ class UsersResource:
         password: str,
         token: str | None = None,
     ) -> LoginResponse:
+        self._client._ensure_login_allowed()
         payload = UserLoginRequest(
             login_id=login_id,
             password=password,
@@ -35,9 +36,11 @@ class UsersResource:
         if session_token is None:
             raise MattermostError("Mattermost login response did not include a Token header.")
 
+        user = User.model_validate(response.json())
         self._client._set_token(session_token)
+        self._client._set_bot_session(user)
         return LoginResponse(
-            user=User.model_validate(response.json()),
+            user=user,
             token=session_token,
         )
 

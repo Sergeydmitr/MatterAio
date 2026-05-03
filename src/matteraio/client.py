@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from types import TracebackType
 from typing import Any, TypeVar
 
@@ -9,15 +9,32 @@ from pydantic import BaseModel, ValidationError
 
 from .channels import ChannelsResource
 from .config import MattermostConfig
-from .exceptions import ApiError, AuthError, RateLimitError, TransportError
+from .exceptions import ApiError, AuthError, MattermostError, RateLimitError, TransportError
 from .files import FilesResource
-from .models import ErrorResponse
+from .models import ErrorResponse, User
 from .posts import PostsResource
 from .reactions import ReactionsResource
 from .teams import TeamsResource
 from .users import UsersResource
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
+
+
+@dataclass(frozen=True)
+class BotSession:
+    user: User
+
+    @property
+    def user_id(self) -> str:
+        return self.user.id
+
+    @property
+    def username(self) -> str:
+        return self.user.username
+
+    @property
+    def email(self) -> str | None:
+        return self.user.email
 
 
 class MattermostClient:
@@ -65,6 +82,7 @@ class MattermostClient:
         self.posts = PostsResource(self)
         self.reactions = ReactionsResource(self)
         self.teams = TeamsResource(self)
+        self._bot_session: BotSession | None = None
 
     async def __aenter__(self) -> MattermostClient:
         return self
@@ -80,9 +98,47 @@ class MattermostClient:
     async def aclose(self) -> None:
         await self._client.aclose()
 
+    @property
+    def bot_session(self) -> BotSession | None:
+        return self._bot_session
+
+    async def init_session(self) -> BotSession:
+        if self._bot_session is not None:
+            return self._bot_session
+
+        user = await self.users.me()
+        return self._set_bot_session(user)
+
+    def require_session(self) -> BotSession:
+        if self._bot_session is None:
+            raise MattermostError("Session is not initialized. Call await client.init_session().")
+        return self._bot_session
+
+    def _ensure_login_allowed(self) -> None:
+        if self.config.token:
+            raise MattermostError(
+                "MattermostClient already has a token. Create a new client to log in again."
+            )
+
     def _set_token(self, token: str) -> None:
+        if self.config.token and self.config.token != token:
+            raise MattermostError(
+                "MattermostClient token is already set. Create a new client to use another token."
+            )
         self.config = replace(self.config, token=token)
         self._client.headers["Authorization"] = f"Bearer {token}"
+
+    def _set_bot_session(self, user: User) -> BotSession:
+        if self._bot_session is not None:
+            if self._bot_session.user_id != user.id:
+                raise MattermostError(
+                    "Session is already initialized for another user. "
+                    "Create a new client to use another token."
+                )
+            return self._bot_session
+
+        self._bot_session = BotSession(user=user)
+        return self._bot_session
 
     async def _request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
         try:

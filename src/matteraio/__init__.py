@@ -1,4 +1,4 @@
-from .client import MattermostClient
+from .client import BotSession, MattermostClient
 from .config import MattermostConfig
 from .events import (
     HelloEvent,
@@ -67,6 +67,7 @@ from .websocket import MattermostWebSocketClient
 __all__ = [
     "ApiError",
     "AuthError",
+    "BotSession",
     "Channel",
     "ChannelCreateRequest",
     "ChannelMember",
