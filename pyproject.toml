@@ -1,6 +1,6 @@
 [project]
 name = "matteraio"
-version = "0.2.0"
+version = "0.3.0"
 description = "Async Python client for the Mattermost REST API and WebSocket events."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -22,6 +22,15 @@ dev = [
 [build-system]
 requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.github",
+    "/AGENTS.md",
+    "/docker-compose.integration.yml",
+    "/tests",
+    "/uv.lock",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/matteraio"]
