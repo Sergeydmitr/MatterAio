@@ -31,11 +31,14 @@ from .models import (
     ChannelCreateRequest,
     FileInfo,
     FileUploadResponse,
+    LoginResponse,
     Post,
     PostCreateRequest,
     Team,
     TeamCreateRequest,
     User,
+    UserLoginRequest,
+    UserSearchRequest,
 )
 from .websocket import MattermostWebSocketClient
 
@@ -52,6 +55,7 @@ __all__ = [
     "MattermostWebSocketClient",
     "MattermostConfig",
     "MattermostError",
+    "LoginResponse",
     "PostedEvent",
     "PostedEventData",
     "Post",
@@ -64,6 +68,8 @@ __all__ = [
     "TransportError",
     "TypedWebSocketEvent",
     "User",
+    "UserLoginRequest",
+    "UserSearchRequest",
     "WebSocketBroadcast",
     "WebSocketCommand",
     "WebSocketConnectionError",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from types import TracebackType
 from typing import Any, TypeVar
 
@@ -22,7 +23,7 @@ class MattermostClient:
     def __init__(
         self,
         base_url: str,
-        token: str,
+        token: str = "",
         *,
         timeout: float = 10.0,
         connect_timeout: float = 5.0,
@@ -45,12 +46,13 @@ class MattermostClient:
             max_keepalive_connections=self.config.max_keepalive_connections,
         )
 
+        headers = {"Accept": "application/json"}
+        if self.config.token:
+            headers["Authorization"] = f"Bearer {self.config.token}"
+
         self._client = httpx.AsyncClient(
             base_url=self.config.api_base_url,
-            headers={
-                "Authorization": f"Bearer {self.config.token}",
-                "Accept": "application/json",
-            },
+            headers=headers,
             timeout=timeout_config,
             limits=limits,
             transport=transport,
@@ -75,6 +77,10 @@ class MattermostClient:
 
     async def aclose(self) -> None:
         await self._client.aclose()
+
+    def _set_token(self, token: str) -> None:
+        self.config = replace(self.config, token=token)
+        self._client.headers["Authorization"] = f"Bearer {token}"
 
     async def _request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
         try:

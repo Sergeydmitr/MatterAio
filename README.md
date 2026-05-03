@@ -143,7 +143,7 @@ Create a client with:
 ```python
 MattermostClient(
     base_url: str,
-    token: str,
+    token: str = "",
     *,
     timeout: float = 10.0,
     connect_timeout: float = 5.0,
@@ -155,7 +155,8 @@ MattermostClient(
 
 Notes:
 - `base_url` may be either the server root, like `https://mm.example.com`, or a full API base ending in `/api/v4`
-- authentication uses `Authorization: Bearer <token>`
+- authentication uses `Authorization: Bearer <token>` when `token` is provided
+- `client.users.login(...)` can be used to obtain and store a session token after construction
 - the client is intended to be used as an async context manager
 
 Lifecycle methods:
@@ -209,14 +210,37 @@ Typed event parsing:
 
 ### `client.users`
 
+#### `await client.users.login(*, login_id: str, password: str, token: str | None = None) -> LoginResponse`
+
+Log in with email, username, or LDAP ID. The returned `LoginResponse.token` is also stored on the client, so later REST
+calls use the session token automatically.
+
 #### `await client.users.me() -> User`
 
 Get the current authenticated user.
 
+#### `await client.users.get(user_id: str) -> User`
+
+Get a user by ID. Mattermost also accepts `"me"` for the current user.
+
+#### `await client.users.get_by_username(username: str) -> User`
+
+Get a user by username.
+
+#### `await client.users.get_by_email(email: str) -> User`
+
+Get a user by email address.
+
+#### `await client.users.search(term: str, *, team_id: str | None = None, not_in_team_id: str | None = None, in_channel_id: str | None = None, not_in_channel_id: str | None = None, in_group_id: str | None = None, group_constrained: bool | None = None, allow_inactive: bool | None = None, without_team: bool | None = None, limit: int | None = None) -> list[User]`
+
+Search users by username, full name, nickname, or email, optionally scoped to a team, channel, or group.
+
 Example:
 
 ```python
+login = await client.users.login(login_id="bot@example.com", password="secret")
 me = await client.users.me()
+users = await client.users.search("ali", team_id="team-id", limit=10)
 print(me.id, me.username, me.email)
 ```
 
@@ -344,6 +368,9 @@ creation inside one call.
 Current typed response/request models include:
 
 - `User`
+- `UserLoginRequest`
+- `LoginResponse`
+- `UserSearchRequest`
 - `Team`
 - `TeamCreateRequest`
 - `Channel`
@@ -405,7 +432,7 @@ except TransportError:
 
 Implemented resources:
 
-- users: `me`
+- users: `login`, `me`, `get`, `get_by_username`, `get_by_email`, `search`
 - teams: `get`, `get_by_name`, `create`
 - channels: `get`, `get_by_name`, `create`, `list`
 - posts: `get`, `create`

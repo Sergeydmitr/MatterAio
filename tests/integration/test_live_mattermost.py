@@ -37,6 +37,16 @@ async def receive_until(
 async def test_rest_resources_work_against_live_server(
     integration_workspace: dict[str, str],
 ) -> None:
+    async with MattermostClient(base_url=integration_workspace["base_url"]) as login_client:
+        login = await login_client.users.login(
+            login_id=integration_workspace["email"],
+            password=integration_workspace["password"],
+        )
+        assert login.user.username == integration_workspace["username"]
+
+        logged_in_user = await login_client.users.me()
+        assert logged_in_user.username == integration_workspace["username"]
+
     async with MattermostClient(
         base_url=integration_workspace["base_url"],
         token=integration_workspace["token"],
@@ -49,6 +59,22 @@ async def test_rest_resources_work_against_live_server(
 
         me = await client.users.me()
         assert me.username == integration_workspace["username"]
+
+        user = await client.users.get(me.id)
+        assert user.username == integration_workspace["username"]
+
+        user_by_username = await client.users.get_by_username(integration_workspace["username"])
+        assert user_by_username.id == me.id
+
+        user_by_email = await client.users.get_by_email(integration_workspace["email"])
+        assert user_by_email.id == me.id
+
+        search_results = await client.users.search(
+            integration_workspace["username"],
+            team_id=integration_workspace["team_id"],
+            limit=10,
+        )
+        assert any(item.id == me.id for item in search_results)
 
         channel = await client.channels.get(integration_workspace["channel_id"])
         assert channel.id == integration_workspace["channel_id"]

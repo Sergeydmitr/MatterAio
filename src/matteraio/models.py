@@ -13,6 +13,30 @@ class User(MattermostModel):
     email: str | None = None
 
 
+class UserLoginRequest(MattermostModel):
+    login_id: str
+    password: str
+    token: str | None = None
+
+
+class LoginResponse(MattermostModel):
+    user: User
+    token: str
+
+
+class UserSearchRequest(MattermostModel):
+    term: str
+    team_id: str | None = None
+    not_in_team_id: str | None = None
+    in_channel_id: str | None = None
+    not_in_channel_id: str | None = None
+    in_group_id: str | None = None
+    group_constrained: bool | None = None
+    allow_inactive: bool | None = None
+    without_team: bool | None = None
+    limit: int | None = None
+
+
 class Team(MattermostModel):
     id: str
     name: str
