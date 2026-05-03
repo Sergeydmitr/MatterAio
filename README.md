@@ -330,6 +330,68 @@ Create a channel. Use `type="O"` for public channels and `type="P"` for private 
 
 List channels for a team.
 
+#### `await client.channels.update(channel_id: str, *, name: str, display_name: str, purpose: str, header: str) -> Channel`
+
+Update the full editable channel profile. Mattermost treats omitted fields as blanks, so this method requires all common
+editable fields.
+
+#### `await client.channels.patch(channel_id: str, *, name: str | None = None, display_name: str | None = None, purpose: str | None = None, header: str | None = None, group_constrained: bool | None = None, autotranslation: bool | None = None, managed_category_name: str | None = None) -> Channel`
+
+Patch only the provided channel fields.
+
+#### `await client.channels.delete(channel_id: str, *, permanent: bool = False) -> StatusOK`
+
+Archive a channel. Use `permanent=True` only when the server allows permanent channel deletion.
+
+#### `await client.channels.restore(channel_id: str) -> Channel`
+
+Restore an archived channel. `archive(...)` and `unarchive(...)` are aliases for `delete(...)` and `restore(...)`.
+
+#### `await client.channels.list_members(channel_id: str, *, page: int = 0, per_page: int = 60) -> list[ChannelMember]`
+
+List channel members.
+
+#### `await client.channels.add_member(channel_id: str, user_id: str, *, post_root_id: str | None = None) -> ChannelMember`
+
+Add a user to a channel. `join(...)` is an alias for this single endpoint call.
+
+#### `await client.channels.remove_member(channel_id: str, user_id: str) -> StatusOK`
+
+Remove a user from a channel. `leave(...)` is an alias for this single endpoint call.
+
+#### `await client.channels.create_direct(user_id: str, other_user_id: str) -> Channel`
+
+Create or get a direct message channel between two users.
+
+#### `await client.channels.create_group(user_ids: list[str]) -> Channel`
+
+Create or get a group message channel for 3 to 8 users.
+
+#### `await client.channels.search(team_id: str, term: str) -> list[Channel]`
+
+Search public channels inside a team.
+
+#### `await client.channels.search_all(term: str, *, system_console: bool = True, ...) -> list[Channel]`
+
+Search open and private channels across teams, with optional filters such as `team_ids`, `public`, `private`, `page`, and
+`per_page`.
+
+#### `await client.channels.search_group(term: str) -> list[Channel]`
+
+Search group message channels by member username.
+
+#### `await client.channels.stats(channel_id: str) -> ChannelStats`
+
+Get channel statistics.
+
+#### `await client.channels.unread(user_id: str, channel_id: str) -> ChannelUnread`
+
+Get unread message and mention counts for a user in a channel.
+
+#### `await client.channels.pinned_posts(channel_id: str) -> PostList`
+
+Get pinned posts for a channel.
+
 Example:
 
 ```python
@@ -341,6 +403,10 @@ channel = await client.channels.create(
     display_name="Incidents",
 )
 channels = await client.channels.list("team-id", page=0, per_page=50)
+await client.channels.patch(channel.id, header="Release notes")
+member = await client.channels.join(channel.id, "user-id")
+unread = await client.channels.unread("user-id", channel.id)
+pinned = await client.channels.pinned_posts(channel.id)
 ```
 
 ### `client.posts`
@@ -429,8 +495,17 @@ Current typed response/request models include:
 - `StatusOK`
 - `Channel`
 - `ChannelCreateRequest`
+- `ChannelUpdateRequest`
+- `ChannelPatchRequest`
+- `ChannelSearchRequest`
+- `ChannelSearchAllRequest`
+- `ChannelMember`
+- `ChannelMemberAddRequest`
+- `ChannelStats`
+- `ChannelUnread`
 - `Post`
 - `PostCreateRequest`
+- `PostList`
 - `FileInfo`
 - `FileUploadResponse`
 - `WebSocketBroadcast`
@@ -489,7 +564,9 @@ Implemented resources:
 - users: `login`, `me`, `get`, `get_by_username`, `get_by_email`, `search`
 - teams: `get`, `get_by_name`, `create`, `list`, `search`, `update`, `patch`, `delete`, `restore`,
   `list_members`, `add_member`, `get_member`, `remove_member`, `update_member_roles`
-- channels: `get`, `get_by_name`, `create`, `list`
+- channels: `get`, `get_by_name`, `create`, `list`, `update`, `patch`, `delete`, `restore`, `archive`,
+  `unarchive`, `join`, `leave`, `list_members`, `add_member`, `remove_member`, `create_direct`,
+  `create_group`, `search`, `search_all`, `search_group`, `stats`, `unread`, `pinned_posts`
 - posts: `get`, `create`
 - files: `info`, `download`, `upload`
 - websocket: `connect`, `reconnect`, `authenticate`, `send_command`, `ping`, `receive_json`, `receive_message`
