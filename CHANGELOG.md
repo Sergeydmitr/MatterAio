@@ -1,0 +1,20 @@
+# Changelog
+
+## 1.0.0 - 2026-05-04
+
+First production/stable release.
+
+### Added
+
+- Async Mattermost REST client for users/auth, teams, channels, posts, reactions, and files.
+- Typed Pydantic response models for supported Mattermost REST resources.
+- Mattermost WebSocket client with typed `hello`, `posted`, and `status_change` events.
+- Decorator-based WebSocket event routers and dispatcher.
+- Resource-level endpoint documentation with returned data structures and request examples.
+- GitHub Actions workflow for publishing distributions to PyPI.
+
+### Notes
+
+- MatterAio keeps the client explicit and async-only; methods map directly to Mattermost API
+  calls without hidden multi-step workflows.
+- Live Mattermost coverage remains opt-in via `MATTERAIO_RUN_INTEGRATION=1`.
