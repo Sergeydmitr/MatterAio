@@ -10,6 +10,7 @@ from .events import (
     TypedWebSocketEvent,
     WebSocketBroadcast,
     WebSocketCommand,
+    WebSocketEventBase,
     WebSocketMessage,
     parse_websocket_event,
 )
@@ -25,6 +26,14 @@ from .exceptions import (
     WebSocketNotConnectedError,
     WebSocketProtocolError,
     WebSocketTimeoutError,
+)
+from .handlers import (
+    EventFilter,
+    EventHandler,
+    EventSelector,
+    MattermostEventDispatcher,
+    MattermostEventRouter,
+    WebSocketHandlerEvent,
 )
 from .models import (
     Channel,
@@ -82,7 +91,12 @@ __all__ = [
     "FileUploadResponse",
     "HelloEvent",
     "HelloEventData",
+    "EventFilter",
+    "EventHandler",
+    "EventSelector",
     "MattermostClient",
+    "MattermostEventDispatcher",
+    "MattermostEventRouter",
     "MattermostWebSocketClient",
     "MattermostConfig",
     "MattermostError",
@@ -120,6 +134,8 @@ __all__ = [
     "WebSocketConnectionError",
     "WebSocketDisconnectedError",
     "WebSocketError",
+    "WebSocketEventBase",
+    "WebSocketHandlerEvent",
     "WebSocketMessage",
     "WebSocketNotConnectedError",
     "WebSocketProtocolError",
