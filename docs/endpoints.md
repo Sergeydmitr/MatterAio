@@ -37,5 +37,8 @@ these models are ignored by MatterAio.
 ## Errors
 
 REST methods raise `TransportError` for network failures and `ApiError` for non-2xx responses.
-`AuthError` covers `401` and `403`; `RateLimitError` covers `429`. WebSocket methods raise
-`WebSocketError` subclasses for connection, protocol, timeout, and closed-connection failures.
+`AuthError` covers `401` and `403`; `RateLimitError` covers `429`.
+`ResponseValidationError` is raised when a successful REST response cannot be decoded or does
+not match the typed model expected by the SDK. It includes request method, path, status code,
+request ID when present, and the raw response body. WebSocket methods raise `WebSocketError`
+subclasses for connection, protocol, timeout, and closed-connection failures.

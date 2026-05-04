@@ -9,6 +9,28 @@ class TransportError(MattermostError):
     pass
 
 
+class ResponseValidationError(MattermostError):
+    def __init__(
+        self,
+        message: str,
+        *,
+        method: str,
+        path: str,
+        status_code: int,
+        request_id: str | None = None,
+        raw_body: str | None = None,
+        reason: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.message = message
+        self.method = method
+        self.path = path
+        self.status_code = status_code
+        self.request_id = request_id
+        self.raw_body = raw_body
+        self.reason = reason
+
+
 class ApiError(MattermostError):
     def __init__(
         self,

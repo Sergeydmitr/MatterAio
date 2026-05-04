@@ -11,6 +11,7 @@
 | `client.posts.delete(post_id)` | `DELETE /posts/{post_id}` | Soft-delete a post. |
 | `client.posts.thread(post_id, ...)` | `GET /posts/{post_id}/thread` | Get a post thread. |
 | `client.posts.list(channel_id, ...)` | `GET /channels/{channel_id}/posts` | Get channel post history. |
+| `client.posts.iter_channel(channel_id, ...)` | `GET /channels/{channel_id}/posts` | Iterate channel posts across pages. |
 | `client.posts.search(team_id, terms, ...)` | `POST /teams/{team_id}/posts/search` | Search team posts using Mattermost search syntax. |
 | `client.posts.pin(post_id)` | `POST /posts/{post_id}/pin` | Pin a post to its channel. |
 | `client.posts.unpin(post_id)` | `POST /posts/{post_id}/unpin` | Unpin a post from its channel. |
@@ -74,11 +75,12 @@ async def main() -> None:
         )
 
         history = await client.posts.list(channel.id, page=0, per_page=20)
+        messages = [post.message async for post in client.posts.iter_channel(channel.id)]
         thread = await client.posts.thread(post.id, per_page=20)
         search = await client.posts.search(team.id, "deploy", per_page=10)
         fetched = await client.posts.get_by_ids([post.id, reply.id])
 
         await client.posts.pin(post.id)
 
-        print(history.order, thread.posts[post.id].message, search.matches, len(fetched))
+        print(history.order, messages, thread.posts[post.id].message, search.matches, len(fetched))
 ```

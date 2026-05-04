@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from urllib.parse import quote
 
+from ._paths import quote_path
 from .exceptions import MattermostError
 from .models import LoginResponse, User, UserLoginRequest, UserSearchRequest
 
@@ -36,7 +36,7 @@ class UsersResource:
         if session_token is None:
             raise MattermostError("Mattermost login response did not include a Token header.")
 
-        user = User.model_validate(response.json())
+        user = self._client._validate_response_model(response, User)
         self._client._set_token(session_token)
         self._client._set_bot_session(user)
         return LoginResponse(
@@ -48,15 +48,15 @@ class UsersResource:
         return await self._client._request_model("GET", "/users/me", User)
 
     async def get(self, user_id: str) -> User:
-        return await self._client._request_model("GET", f"/users/{user_id}", User)
+        return await self._client._request_model("GET", f"/users/{quote_path(user_id)}", User)
 
     async def get_by_username(self, username: str) -> User:
-        return await self._client._request_model("GET", f"/users/username/{username}", User)
+        return await self._client._request_model(
+            "GET", f"/users/username/{quote_path(username)}", User
+        )
 
     async def get_by_email(self, email: str) -> User:
-        return await self._client._request_model(
-            "GET", f"/users/email/{quote(email, safe='')}", User
-        )
+        return await self._client._request_model("GET", f"/users/email/{quote_path(email)}", User)
 
     async def search(
         self,
@@ -89,4 +89,8 @@ class UsersResource:
             "/users/search",
             json=payload.model_dump(exclude_none=True),
         )
-        return [User.model_validate(item) for item in response.json()]
+        return self._client._validate_model_list_data(
+            response,
+            User,
+            self._client._response_json(response),
+        )

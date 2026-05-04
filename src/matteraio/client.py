@@ -9,7 +9,14 @@ from pydantic import BaseModel, ValidationError
 
 from .channels import ChannelsResource
 from .config import MattermostConfig
-from .exceptions import ApiError, AuthError, MattermostError, RateLimitError, TransportError
+from .exceptions import (
+    ApiError,
+    AuthError,
+    MattermostError,
+    RateLimitError,
+    ResponseValidationError,
+    TransportError,
+)
 from .files import FilesResource
 from .models import ErrorResponse, User
 from .posts import PostsResource
@@ -159,7 +166,57 @@ class MattermostClient:
         **kwargs: Any,
     ) -> ModelT:
         response = await self._request(method, path, **kwargs)
-        return model_type.model_validate(response.json())
+        return self._validate_response_model(response, model_type)
+
+    def _response_json(self, response: httpx.Response) -> Any:
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise self._build_response_validation_error(
+                response,
+                "Mattermost returned invalid JSON.",
+            ) from exc
+
+    def _validate_response_model(
+        self,
+        response: httpx.Response,
+        model_type: type[ModelT],
+    ) -> ModelT:
+        return self._validate_model_data(response, model_type, self._response_json(response))
+
+    def _validate_model_data(
+        self,
+        response: httpx.Response,
+        model_type: type[ModelT],
+        data: Any,
+    ) -> ModelT:
+        try:
+            return model_type.model_validate(data)
+        except ValidationError as exc:
+            raise self._build_response_validation_error(
+                response,
+                "Mattermost returned an unexpected response body.",
+            ) from exc
+
+    def _validate_model_list_data(
+        self,
+        response: httpx.Response,
+        model_type: type[ModelT],
+        data: Any,
+    ) -> list[ModelT]:
+        if not isinstance(data, list):
+            raise self._build_response_validation_error(
+                response,
+                "Mattermost returned an unexpected response body.",
+            )
+
+        try:
+            return [model_type.model_validate(item) for item in data]
+        except ValidationError as exc:
+            raise self._build_response_validation_error(
+                response,
+                "Mattermost returned an unexpected response body.",
+            ) from exc
 
     def _build_api_error(self, response: httpx.Response) -> ApiError:
         try:
@@ -189,6 +246,33 @@ class MattermostClient:
             request_id=payload.request_id,
             detailed_error=payload.detailed_error,
             retry_after=retry_after,
+        )
+
+    def _build_response_validation_error(
+        self,
+        response: httpx.Response,
+        reason: str,
+    ) -> ResponseValidationError:
+        method = ""
+        path = ""
+        try:
+            request = response.request
+        except RuntimeError:
+            request = None
+
+        if request is not None:
+            method = request.method
+            path = request.url.raw_path.decode("ascii", errors="replace")
+
+        request_id = response.headers.get("X-Request-Id") or response.headers.get("X-Request-ID")
+        return ResponseValidationError(
+            reason,
+            method=method,
+            path=path,
+            status_code=response.status_code,
+            request_id=request_id,
+            raw_body=response.text,
+            reason=reason,
         )
 
     @staticmethod

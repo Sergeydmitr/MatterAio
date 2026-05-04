@@ -7,6 +7,7 @@
 | `client.teams.get(team_id)` | `GET /teams/{team_id}` | Get a team by ID. |
 | `client.teams.get_by_name(name)` | `GET /teams/name/{name}` | Get a team by URL-safe name. |
 | `client.teams.list(...)` | `GET /teams` | List teams visible to the current user. |
+| `client.teams.iter_all(...)` | `GET /teams` | Iterate visible teams across pages. |
 | `client.teams.search(term, ...)` | `POST /teams/search` | Search teams by name or display name. |
 | `client.teams.create(...)` | `POST /teams` | Create a team. Use `type="O"` for open teams and `type="I"` for invite-only teams. |
 | `client.teams.update(team_id, ...)` | `PUT /teams/{team_id}` | Replace the editable team profile. |
@@ -14,6 +15,7 @@
 | `client.teams.delete(team_id, permanent=False)` | `DELETE /teams/{team_id}` | Soft-delete a team by default. |
 | `client.teams.restore(team_id)` | `POST /teams/{team_id}/restore` | Restore a soft-deleted team. |
 | `client.teams.list_members(team_id, ...)` | `GET /teams/{team_id}/members` | List team members. |
+| `client.teams.iter_members(team_id, ...)` | `GET /teams/{team_id}/members` | Iterate team members across pages. |
 | `client.teams.add_member(team_id, user_id)` | `POST /teams/{team_id}/members` | Add a user to a team. |
 | `client.teams.get_member(team_id, user_id)` | `GET /teams/{team_id}/members/{user_id}` | Get a team member and their roles. |
 | `client.teams.remove_member(team_id, user_id)` | `DELETE /teams/{team_id}/members/{user_id}` | Remove a user from a team. |
@@ -64,6 +66,7 @@ async def main() -> None:
     ) as client:
         team = await client.teams.get_by_name("engineering")
         teams = await client.teams.list(page=0, per_page=20)
+        team_names = [team.name async for team in client.teams.iter_all(per_page=100)]
 
         created = await client.teams.create(
             name="platform",
@@ -75,5 +78,5 @@ async def main() -> None:
         member = await client.teams.add_member(patched.id, "user-id")
         await client.teams.update_member_roles(patched.id, member.user_id, "team_user team_admin")
 
-        print(team.display_name, len(teams), member.roles)
+        print(team.display_name, len(teams), team_names, member.roles)
 ```

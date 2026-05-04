@@ -68,6 +68,19 @@ If you need login/password authentication instead of a bot token, construct the 
 `token` and call `client.users.login(...)`. Token changes inside one client instance are not
 supported; create a new client when credentials change.
 
+## Pagination Helpers
+
+Paginated list endpoints can be consumed page by page with the regular `list(...)` methods, or
+as async iterators when you want all items until Mattermost returns a short or empty page.
+
+```python
+async for channel in client.channels.iter_all(team.id, per_page=100):
+    print(channel.name)
+
+async for post in client.posts.iter_channel(channel.id, per_page=100):
+    print(post.message)
+```
+
 ## WebSocket Handlers
 
 Use routers and decorators to handle incoming WebSocket events.

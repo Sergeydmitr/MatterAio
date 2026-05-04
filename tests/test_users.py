@@ -141,6 +141,33 @@ class UsersResourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(by_username.id, "user-1")
         self.assertEqual(by_email.email, "alice@example.com")
 
+    async def test_user_lookup_paths_quote_segments(self) -> None:
+        calls: list[bytes] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(request.url.raw_path)
+            return httpx.Response(200, json={"id": "user-1", "username": "alice"})
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            await client.users.get("user/1")
+            await client.users.get_by_username("alice/bob")
+            await client.users.get_by_email("alice+ops@example.com")
+
+        self.assertEqual(
+            calls,
+            [
+                b"/api/v4/users/user%2F1",
+                b"/api/v4/users/username/alice%2Fbob",
+                b"/api/v4/users/email/alice%2Bops%40example.com",
+            ],
+        )
+
     async def test_search_users_sends_expected_criteria(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:
             self.assertEqual(request.method, "POST")

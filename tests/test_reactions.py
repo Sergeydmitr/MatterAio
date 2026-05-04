@@ -65,6 +65,37 @@ class ReactionsResourceTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result.status, "OK")
 
+    async def test_reaction_paths_quote_segments(self) -> None:
+        calls: list[bytes] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(request.url.raw_path)
+
+            if len(calls) == 1:
+                return httpx.Response(200, json={"status": "OK"})
+
+            return httpx.Response(200, json=[_reaction_payload("custom")])
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            removed = await client.reactions.remove("user/1", "post/1", "custom/emoji")
+            reactions = await client.reactions.list("post/1")
+
+        self.assertEqual(removed.status, "OK")
+        self.assertEqual(reactions[0].emoji_name, "custom")
+        self.assertEqual(
+            calls,
+            [
+                b"/api/v4/users/user%2F1/posts/post%2F1/reactions/custom%2Femoji",
+                b"/api/v4/posts/post%2F1/reactions",
+            ],
+        )
+
     async def test_list_reactions_for_post_returns_typed_reactions(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:
             self.assertEqual(request.method, "GET")

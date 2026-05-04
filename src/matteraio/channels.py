@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import builtins
+from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING
 
+from ._pagination import validate_optional_page_args, validate_page_args
+from ._paths import quote_path
 from .models import (
     Channel,
     ChannelCreateRequest,
@@ -27,12 +30,14 @@ class ChannelsResource:
         self._client = client
 
     async def get(self, channel_id: str) -> Channel:
-        return await self._client._request_model("GET", f"/channels/{channel_id}", Channel)
+        return await self._client._request_model(
+            "GET", f"/channels/{quote_path(channel_id)}", Channel
+        )
 
     async def get_by_name(self, team_id: str, channel_name: str) -> Channel:
         return await self._client._request_model(
             "GET",
-            f"/teams/{team_id}/channels/name/{channel_name}",
+            f"/teams/{quote_path(team_id)}/channels/name/{quote_path(channel_name)}",
             Channel,
         )
 
@@ -68,12 +73,38 @@ class ChannelsResource:
         page: int = 0,
         per_page: int = 60,
     ) -> builtins.list[Channel]:
+        validate_page_args(page, per_page)
         response = await self._client._request(
             "GET",
-            f"/teams/{team_id}/channels",
+            f"/teams/{quote_path(team_id)}/channels",
             params={"page": page, "per_page": per_page},
         )
-        return [Channel.model_validate(item) for item in response.json()]
+        return self._client._validate_model_list_data(
+            response,
+            Channel,
+            self._client._response_json(response),
+        )
+
+    async def iter_all(
+        self,
+        team_id: str,
+        *,
+        page: int = 0,
+        per_page: int = 60,
+    ) -> AsyncIterator[Channel]:
+        validate_page_args(page, per_page)
+        current_page = page
+        while True:
+            channels = await self.list(team_id, page=current_page, per_page=per_page)
+            if not channels:
+                break
+
+            for channel in channels:
+                yield channel
+
+            if len(channels) < per_page:
+                break
+            current_page += 1
 
     async def update(
         self,
@@ -93,7 +124,7 @@ class ChannelsResource:
         )
         return await self._client._request_model(
             "PUT",
-            f"/channels/{channel_id}",
+            f"/channels/{quote_path(channel_id)}",
             Channel,
             json=payload.model_dump(),
         )
@@ -121,7 +152,7 @@ class ChannelsResource:
         )
         return await self._client._request_model(
             "PUT",
-            f"/channels/{channel_id}/patch",
+            f"/channels/{quote_path(channel_id)}/patch",
             Channel,
             json=payload.model_dump(exclude_none=True),
         )
@@ -129,13 +160,15 @@ class ChannelsResource:
     async def delete(self, channel_id: str, *, permanent: bool = False) -> StatusOK:
         return await self._client._request_model(
             "DELETE",
-            f"/channels/{channel_id}",
+            f"/channels/{quote_path(channel_id)}",
             StatusOK,
             params={"permanent": permanent},
         )
 
     async def restore(self, channel_id: str) -> Channel:
-        return await self._client._request_model("POST", f"/channels/{channel_id}/restore", Channel)
+        return await self._client._request_model(
+            "POST", f"/channels/{quote_path(channel_id)}/restore", Channel
+        )
 
     async def archive(self, channel_id: str, *, permanent: bool = False) -> StatusOK:
         return await self.delete(channel_id, permanent=permanent)
@@ -162,12 +195,38 @@ class ChannelsResource:
         page: int = 0,
         per_page: int = 60,
     ) -> builtins.list[ChannelMember]:
+        validate_page_args(page, per_page)
         response = await self._client._request(
             "GET",
-            f"/channels/{channel_id}/members",
+            f"/channels/{quote_path(channel_id)}/members",
             params={"page": page, "per_page": per_page},
         )
-        return [ChannelMember.model_validate(item) for item in response.json()]
+        return self._client._validate_model_list_data(
+            response,
+            ChannelMember,
+            self._client._response_json(response),
+        )
+
+    async def iter_members(
+        self,
+        channel_id: str,
+        *,
+        page: int = 0,
+        per_page: int = 60,
+    ) -> AsyncIterator[ChannelMember]:
+        validate_page_args(page, per_page)
+        current_page = page
+        while True:
+            members = await self.list_members(channel_id, page=current_page, per_page=per_page)
+            if not members:
+                break
+
+            for member in members:
+                yield member
+
+            if len(members) < per_page:
+                break
+            current_page += 1
 
     async def add_member(
         self,
@@ -179,7 +238,7 @@ class ChannelsResource:
         payload = ChannelMemberAddRequest(user_id=user_id, post_root_id=post_root_id)
         return await self._client._request_model(
             "POST",
-            f"/channels/{channel_id}/members",
+            f"/channels/{quote_path(channel_id)}/members",
             ChannelMember,
             json=payload.model_dump(exclude_none=True),
         )
@@ -187,7 +246,7 @@ class ChannelsResource:
     async def remove_member(self, channel_id: str, user_id: str) -> StatusOK:
         return await self._client._request_model(
             "DELETE",
-            f"/channels/{channel_id}/members/{user_id}",
+            f"/channels/{quote_path(channel_id)}/members/{quote_path(user_id)}",
             StatusOK,
         )
 
@@ -211,10 +270,14 @@ class ChannelsResource:
         payload = ChannelSearchRequest(term=term)
         response = await self._client._request(
             "POST",
-            f"/teams/{team_id}/channels/search",
+            f"/teams/{quote_path(team_id)}/channels/search",
             json=payload.model_dump(),
         )
-        return [Channel.model_validate(item) for item in response.json()]
+        return self._client._validate_model_list_data(
+            response,
+            Channel,
+            self._client._response_json(response),
+        )
 
     async def search_all(
         self,
@@ -235,6 +298,7 @@ class ChannelsResource:
         include_search_by_id: bool | None = None,
         exclude_remote: bool | None = None,
     ) -> builtins.list[Channel]:
+        validate_optional_page_args(page, per_page)
         payload = ChannelSearchAllRequest(
             term=term,
             not_associated_to_group=not_associated_to_group,
@@ -257,9 +321,9 @@ class ChannelsResource:
             params={"system_console": system_console},
             json=payload.model_dump(exclude_none=True),
         )
-        data = response.json()
-        channels = data["channels"] if isinstance(data, dict) else data
-        return [Channel.model_validate(item) for item in channels]
+        data = self._client._response_json(response)
+        channels = data.get("channels") if isinstance(data, dict) else data
+        return self._client._validate_model_list_data(response, Channel, channels)
 
     async def search_group(self, term: str) -> builtins.list[Channel]:
         payload = ChannelSearchRequest(term=term)
@@ -268,19 +332,25 @@ class ChannelsResource:
             "/channels/group/search",
             json=payload.model_dump(),
         )
-        return [Channel.model_validate(item) for item in response.json()]
+        return self._client._validate_model_list_data(
+            response,
+            Channel,
+            self._client._response_json(response),
+        )
 
     async def stats(self, channel_id: str) -> ChannelStats:
         return await self._client._request_model(
-            "GET", f"/channels/{channel_id}/stats", ChannelStats
+            "GET", f"/channels/{quote_path(channel_id)}/stats", ChannelStats
         )
 
     async def unread(self, user_id: str, channel_id: str) -> ChannelUnread:
         return await self._client._request_model(
             "GET",
-            f"/users/{user_id}/channels/{channel_id}/unread",
+            f"/users/{quote_path(user_id)}/channels/{quote_path(channel_id)}/unread",
             ChannelUnread,
         )
 
     async def pinned_posts(self, channel_id: str) -> PostList:
-        return await self._client._request_model("GET", f"/channels/{channel_id}/pinned", PostList)
+        return await self._client._request_model(
+            "GET", f"/channels/{quote_path(channel_id)}/pinned", PostList
+        )

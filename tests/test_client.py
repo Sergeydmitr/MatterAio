@@ -4,7 +4,13 @@ import unittest
 
 import httpx
 
-from matteraio import AuthError, MattermostClient, MattermostError, TransportError
+from matteraio import (
+    AuthError,
+    MattermostClient,
+    MattermostError,
+    ResponseValidationError,
+    TransportError,
+)
 
 
 class MattermostClientTests(unittest.IsolatedAsyncioTestCase):
@@ -96,6 +102,31 @@ class MattermostClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(exc_info.exception.status_code, 401)
         self.assertEqual(exc_info.exception.error_id, "api.context.session_expired.app_error")
         self.assertEqual(exc_info.exception.request_id, "req-123")
+
+    async def test_response_validation_error_includes_request_context(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.url.path, "/api/v4/users/me")
+            return httpx.Response(
+                200,
+                headers={"X-Request-Id": "req-456"},
+                json={"id": "user-1"},
+            )
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            with self.assertRaises(ResponseValidationError) as exc_info:
+                await client.users.me()
+
+        self.assertEqual(exc_info.exception.method, "GET")
+        self.assertEqual(exc_info.exception.path, "/api/v4/users/me")
+        self.assertEqual(exc_info.exception.status_code, 200)
+        self.assertEqual(exc_info.exception.request_id, "req-456")
+        self.assertIn("user-1", exc_info.exception.raw_body or "")
 
     async def test_transport_errors_are_wrapped(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:

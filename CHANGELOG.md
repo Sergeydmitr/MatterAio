@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Async pagination iterators for teams, team members, channels, channel members, and channel
+  posts.
+- `ResponseValidationError` for successful REST responses that do not match expected typed
+  models.
+
+### Fixed
+
+- Quote dynamic REST path segments before sending requests.
+
 ## 1.0.2 - 2026-05-05
 
 ### Fixed

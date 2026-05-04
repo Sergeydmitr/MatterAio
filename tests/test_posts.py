@@ -223,6 +223,60 @@ class PostsResourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(thread.order, ["post-1"])
         self.assertEqual(history.order, ["post-2"])
 
+    async def test_iter_channel_posts_fetches_until_empty_page(self) -> None:
+        pages: list[int] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.method, "GET")
+            self.assertEqual(request.url.path, "/api/v4/channels/channel-1/posts")
+            self.assertEqual(request.url.params["per_page"], "1")
+            page = int(request.url.params["page"])
+            pages.append(page)
+
+            if page == 0:
+                return httpx.Response(200, json=_post_list_payload("post-1", "first"))
+            if page == 1:
+                return httpx.Response(200, json=_post_list_payload("post-2", "second"))
+            return httpx.Response(200, json={"order": [], "posts": {}})
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            posts = [post async for post in client.posts.iter_channel("channel-1", per_page=1)]
+
+        self.assertEqual([post.message for post in posts], ["first", "second"])
+        self.assertEqual(pages, [0, 1, 2])
+
+    async def test_post_paths_quote_segments(self) -> None:
+        calls: list[bytes] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(request.url.raw_path)
+
+            if len(calls) == 1:
+                return httpx.Response(200, json=_post_payload("post/1"))
+
+            return httpx.Response(200, json=_post_list_payload())
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            post = await client.posts.get("post/1")
+            history = await client.posts.list("channel/1")
+
+        self.assertEqual(post.id, "post/1")
+        self.assertEqual(history.order, ["post-1"])
+        self.assertEqual(calls[0], b"/api/v4/posts/post%2F1?include_deleted=false")
+        self.assertTrue(calls[1].startswith(b"/api/v4/channels/channel%2F1/posts?"))
+
     async def test_search_posts_sends_expected_payload(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:
             self.assertEqual(request.method, "POST")

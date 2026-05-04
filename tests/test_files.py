@@ -54,6 +54,45 @@ class FilesResourceTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(content, b"hello file")
 
+    async def test_file_paths_quote_segments(self) -> None:
+        calls: list[bytes] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(request.url.raw_path)
+
+            if len(calls) == 1:
+                return httpx.Response(
+                    200,
+                    json={
+                        "id": "file/1",
+                        "user_id": "user-1",
+                        "channel_id": "channel-1",
+                        "name": "note.txt",
+                    },
+                )
+
+            return httpx.Response(200, content=b"file")
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            file_info = await client.files.info("file/1")
+            content = await client.files.download("file/1")
+
+        self.assertEqual(file_info.id, "file/1")
+        self.assertEqual(content, b"file")
+        self.assertEqual(
+            calls,
+            [
+                b"/api/v4/files/file%2F1/info",
+                b"/api/v4/files/file%2F1",
+            ],
+        )
+
     async def test_upload_file_uses_multipart_form_data(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:
             body = request.read()

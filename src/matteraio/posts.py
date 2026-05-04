@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import builtins
+from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING
 
+from ._pagination import validate_optional_page_args, validate_page_args
+from ._paths import quote_path
 from .models import (
     FileInfo,
     Post,
@@ -26,7 +29,7 @@ class PostsResource:
     async def get(self, post_id: str, *, include_deleted: bool = False) -> Post:
         return await self._client._request_model(
             "GET",
-            f"/posts/{post_id}",
+            f"/posts/{quote_path(post_id)}",
             Post,
             params={"include_deleted": include_deleted},
         )
@@ -70,7 +73,7 @@ class PostsResource:
         )
         return await self._client._request_model(
             "PUT",
-            f"/posts/{post_id}",
+            f"/posts/{quote_path(post_id)}",
             Post,
             json=payload.model_dump(exclude_none=True),
         )
@@ -94,13 +97,15 @@ class PostsResource:
         )
         return await self._client._request_model(
             "PUT",
-            f"/posts/{post_id}/patch",
+            f"/posts/{quote_path(post_id)}/patch",
             Post,
             json=payload.model_dump(exclude_none=True),
         )
 
     async def delete(self, post_id: str) -> StatusOK:
-        return await self._client._request_model("DELETE", f"/posts/{post_id}", StatusOK)
+        return await self._client._request_model(
+            "DELETE", f"/posts/{quote_path(post_id)}", StatusOK
+        )
 
     async def thread(
         self,
@@ -116,6 +121,7 @@ class PostsResource:
         collapsed_threads_extended: bool | None = None,
         updates_only: bool | None = None,
     ) -> PostList:
+        validate_optional_page_args(None, per_page)
         params: dict[str, object] = {}
         if per_page is not None:
             params["perPage"] = per_page
@@ -138,7 +144,7 @@ class PostsResource:
 
         return await self._client._request_model(
             "GET",
-            f"/posts/{post_id}/thread",
+            f"/posts/{quote_path(post_id)}/thread",
             PostList,
             params=params,
         )
@@ -160,10 +166,14 @@ class PostsResource:
         ):
             raise ValueError("since cannot be used with page, per_page, before, or after")
 
+        resolved_page = 0 if page is None else page
+        resolved_per_page = 60 if per_page is None else per_page
+        validate_page_args(resolved_page, resolved_per_page)
+
         params: dict[str, object] = {"include_deleted": include_deleted}
         if since is None:
-            params["page"] = 0 if page is None else page
-            params["per_page"] = 60 if per_page is None else per_page
+            params["page"] = resolved_page
+            params["per_page"] = resolved_per_page
         else:
             params["since"] = since
         if before is not None:
@@ -175,10 +185,41 @@ class PostsResource:
 
         return await self._client._request_model(
             "GET",
-            f"/channels/{channel_id}/posts",
+            f"/channels/{quote_path(channel_id)}/posts",
             PostList,
             params=params,
         )
+
+    async def iter_channel(
+        self,
+        channel_id: str,
+        *,
+        page: int = 0,
+        per_page: int = 60,
+        include_deleted: bool = False,
+        type: str | None = None,
+    ) -> AsyncIterator[Post]:
+        validate_page_args(page, per_page)
+        current_page = page
+        while True:
+            post_list = await self.list(
+                channel_id,
+                page=current_page,
+                per_page=per_page,
+                include_deleted=include_deleted,
+                type=type,
+            )
+            if not post_list.order:
+                break
+
+            for post_id in post_list.order:
+                post = post_list.posts.get(post_id)
+                if post is not None:
+                    yield post
+
+            if len(post_list.order) < per_page:
+                break
+            current_page += 1
 
     async def search(
         self,
@@ -191,6 +232,7 @@ class PostsResource:
         page: int | None = None,
         per_page: int | None = None,
     ) -> PostSearchResponse:
+        validate_optional_page_args(page, per_page)
         payload = PostSearchRequest(
             terms=terms,
             is_or_search=is_or_search,
@@ -201,20 +243,28 @@ class PostsResource:
         )
         return await self._client._request_model(
             "POST",
-            f"/teams/{team_id}/posts/search",
+            f"/teams/{quote_path(team_id)}/posts/search",
             PostSearchResponse,
             json=payload.model_dump(exclude_none=True),
         )
 
     async def pin(self, post_id: str) -> StatusOK:
-        return await self._client._request_model("POST", f"/posts/{post_id}/pin", StatusOK)
+        return await self._client._request_model(
+            "POST", f"/posts/{quote_path(post_id)}/pin", StatusOK
+        )
 
     async def unpin(self, post_id: str) -> StatusOK:
-        return await self._client._request_model("POST", f"/posts/{post_id}/unpin", StatusOK)
+        return await self._client._request_model(
+            "POST", f"/posts/{quote_path(post_id)}/unpin", StatusOK
+        )
 
     async def get_by_ids(self, post_ids: builtins.list[str]) -> builtins.list[Post]:
         response = await self._client._request("POST", "/posts/ids", json=post_ids)
-        return [Post.model_validate(item) for item in response.json()]
+        return self._client._validate_model_list_data(
+            response,
+            Post,
+            self._client._response_json(response),
+        )
 
     async def files_info(
         self,
@@ -224,7 +274,11 @@ class PostsResource:
     ) -> builtins.list[FileInfo]:
         response = await self._client._request(
             "GET",
-            f"/posts/{post_id}/files/info",
+            f"/posts/{quote_path(post_id)}/files/info",
             params={"include_deleted": include_deleted},
         )
-        return [FileInfo.model_validate(item) for item in response.json()]
+        return self._client._validate_model_list_data(
+            response,
+            FileInfo,
+            self._client._response_json(response),
+        )

@@ -154,6 +154,62 @@ class TeamsResourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(teams), 2)
         self.assertEqual(teams[1].name, "support")
 
+    async def test_iter_all_teams_fetches_until_short_page(self) -> None:
+        pages: list[int] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.method, "GET")
+            self.assertEqual(request.url.path, "/api/v4/teams")
+            self.assertEqual(request.url.params["per_page"], "2")
+            page = int(request.url.params["page"])
+            pages.append(page)
+
+            if page == 0:
+                return httpx.Response(
+                    200,
+                    json=[
+                        _team_payload(),
+                        _team_payload("team-2", "support", "Support"),
+                    ],
+                )
+
+            return httpx.Response(200, json=[_team_payload("team-3", "sales", "Sales")])
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            teams = [team async for team in client.teams.iter_all(per_page=2)]
+
+        self.assertEqual([team.name for team in teams], ["engineering", "support", "sales"])
+        self.assertEqual(pages, [0, 1])
+
+    async def test_team_member_paths_quote_segments(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(
+                request.url.raw_path,
+                b"/api/v4/teams/team%2F1/members/user%2F1",
+            )
+            return httpx.Response(
+                200,
+                json=_team_member_payload(team_id="team/1", user_id="user/1"),
+            )
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            member = await client.teams.get_member("team/1", "user/1")
+
+        self.assertEqual(member.team_id, "team/1")
+        self.assertEqual(member.user_id, "user/1")
+
     async def test_search_teams_sends_expected_payload(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:
             self.assertEqual(request.method, "POST")

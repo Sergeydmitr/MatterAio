@@ -109,6 +109,86 @@ class ChannelsResourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(channels[0].name, "engineering")
         self.assertEqual(channels[1].type, "P")
 
+    async def test_iter_all_channels_fetches_until_short_page(self) -> None:
+        pages: list[int] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.method, "GET")
+            self.assertEqual(request.url.path, "/api/v4/teams/team-1/channels")
+            self.assertEqual(request.url.params["per_page"], "2")
+            page = int(request.url.params["page"])
+            pages.append(page)
+
+            if page == 0:
+                return httpx.Response(
+                    200,
+                    json=[
+                        _channel_payload(channel_id="channel-1", name="town-square"),
+                        _channel_payload(channel_id="channel-2", name="incidents"),
+                    ],
+                )
+
+            return httpx.Response(
+                200,
+                json=[_channel_payload(channel_id="channel-3", name="deployments")],
+            )
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            channels = [channel async for channel in client.channels.iter_all("team-1", per_page=2)]
+
+        self.assertEqual(
+            [channel.name for channel in channels], ["town-square", "incidents", "deployments"]
+        )
+        self.assertEqual(pages, [0, 1])
+
+    async def test_channel_paths_quote_segments(self) -> None:
+        calls: list[bytes] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(request.url.raw_path)
+
+            if len(calls) == 1:
+                return httpx.Response(
+                    200,
+                    json=_channel_payload(channel_id="channel/1", team_id="team/1"),
+                )
+
+            return httpx.Response(
+                200,
+                json={
+                    "team_id": "team/1",
+                    "channel_id": "channel/1",
+                    "msg_count": 1,
+                    "mention_count": 0,
+                },
+            )
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            channel = await client.channels.get_by_name("team/1", "town/square")
+            unread = await client.channels.unread("user/1", "channel/1")
+
+        self.assertEqual(channel.id, "channel/1")
+        self.assertEqual(unread.channel_id, "channel/1")
+        self.assertEqual(
+            calls,
+            [
+                b"/api/v4/teams/team%2F1/channels/name/town%2Fsquare",
+                b"/api/v4/users/user%2F1/channels/channel%2F1/unread",
+            ],
+        )
+
     async def test_get_channel_by_name_uses_team_lookup_endpoint(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:
             self.assertEqual(request.method, "GET")

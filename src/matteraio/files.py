@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ._paths import quote_path
 from .models import FileInfo, FileUploadResponse
 
 if TYPE_CHECKING:
@@ -13,10 +14,12 @@ class FilesResource:
         self._client = client
 
     async def info(self, file_id: str) -> FileInfo:
-        return await self._client._request_model("GET", f"/files/{file_id}/info", FileInfo)
+        return await self._client._request_model(
+            "GET", f"/files/{quote_path(file_id)}/info", FileInfo
+        )
 
     async def download(self, file_id: str) -> bytes:
-        response = await self._client._request("GET", f"/files/{file_id}")
+        response = await self._client._request("GET", f"/files/{quote_path(file_id)}")
         return response.content
 
     async def upload(
