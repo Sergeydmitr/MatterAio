@@ -68,10 +68,33 @@ If you need login/password authentication instead of a bot token, construct the 
 `token` and call `client.users.login(...)`. Token changes inside one client instance are not
 supported; create a new client when credentials change.
 
+## WebSocket Handlers
+
+Use routers and decorators to handle incoming WebSocket events.
+
+```python
+from matteraio import MattermostEventDispatcher, MattermostWebSocketClient, PostedEvent
+
+dispatcher = MattermostEventDispatcher()
+
+
+@dispatcher.on(PostedEvent)
+async def on_posted(event: PostedEvent) -> None:
+    print(event.data.post.message)
+
+
+async def main() -> None:
+    async with MattermostWebSocketClient(
+        base_url="https://mattermost.example.com",
+        token="YOUR_BOT_TOKEN",
+    ) as websocket:
+        await dispatcher.start(websocket)
+```
+
 ## Documentation
 
 - [Endpoint reference](https://github.com/Sergeydmitr/MatterAio/blob/main/docs/endpoints.md):
-  supported REST resources and WebSocket methods grouped by Mattermost endpoint area.
+  REST docs split by Mattermost API area, plus WebSocket and handler references.
 
 ## Development
 
