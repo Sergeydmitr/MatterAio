@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2 - 2026-05-05
+
+### Fixed
+
+- Pinned `astral-sh/setup-uv` to the resolvable `v8.1.0` tag in GitHub Actions
+  workflows.
+
 ## 1.0.1 - 2026-05-04
 
 ### Fixed
