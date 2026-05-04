@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 - 2026-05-04
+
+### Fixed
+
+- Updated GitHub Actions workflow actions to Node.js 24-compatible versions.
+
 ## 1.0.0 - 2026-05-04
 
 First production/stable release.
