@@ -1,6 +1,6 @@
 [project]
 name = "matteraio"
-version = "0.3.1"
+version = "1.0.0"
 description = "Async Python client for the Mattermost REST API and WebSocket events."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -16,7 +16,7 @@ keywords = [
     "websocket",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Framework :: AsyncIO",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
