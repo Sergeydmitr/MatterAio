@@ -1,27 +1,66 @@
 [project]
 name = "matteraio"
-version = "0.2.0"
+version = "0.3.1"
 description = "Async Python client for the Mattermost REST API and WebSocket events."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.12"
+authors = [
+    { name = "Sergey" },
+]
+requires-python = ">=3.11"
+keywords = [
+    "api-client",
+    "async",
+    "mattermost",
+    "sdk",
+    "websocket",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Communications :: Chat",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
 dependencies = [
     "httpx>=0.27,<1.0",
     "pydantic>=2.7,<3.0",
     "websockets>=16,<17",
 ]
 
+[project.urls]
+Homepage = "https://github.com/Sergeydmitr/MatterAio"
+Issues = "https://github.com/Sergeydmitr/MatterAio/issues"
+Repository = "https://github.com/Sergeydmitr/MatterAio"
+
 [dependency-groups]
 dev = [
     "mypy>=1.10,<2.0",
-    "pytest>=8.0,<9.0",
-    "pytest-asyncio>=0.23,<1.0",
+    "pytest>=8.0,<10.0",
+    "pytest-asyncio>=1.0,<2.0",
     "ruff>=0.11,<1.0",
 ]
 
 [build-system]
-requires = ["hatchling>=1.24"]
+requires = ["hatchling>=1.24,<2.0"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.github",
+    "/AGENTS.md",
+    "/docker-compose.integration.yml",
+    "/tests",
+    "/uv.lock",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/matteraio"]
@@ -36,13 +75,13 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.11"
 files = ["src", "tests"]
 check_untyped_defs = true
 disallow_incomplete_defs = true

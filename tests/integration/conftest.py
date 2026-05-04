@@ -118,6 +118,8 @@ async def integration_workspace(integration_base_url: str) -> dict[str, str]:
     return {
         "base_url": integration_base_url,
         "token": token,
+        "email": email,
+        "password": password,
         "username": username,
         "team_id": team_id,
         "team_name": team_name,
