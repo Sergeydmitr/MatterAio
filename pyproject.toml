@@ -1,6 +1,6 @@
 [project]
 name = "matteraio"
-version = "1.1.1"
+version = "1.1.3"
 description = "Async Python client for the Mattermost REST API and WebSocket events."
 readme = "README.md"
 license = { file = "LICENSE" }
