@@ -100,8 +100,8 @@ class MattermostEventRouter:
         return callback
 
     def include_router(self, router: MattermostEventRouter) -> MattermostEventRouter:
-        if router is self:
-            raise ValueError("A Mattermost event router cannot include itself.")
+        if router._contains_router(self):
+            raise ValueError("Including this Mattermost event router would create a cycle.")
         self._routers.append(router)
         return router
 
@@ -121,6 +121,22 @@ class MattermostEventRouter:
             handled += await router.dispatch(event)
 
         return handled
+
+    def _contains_router(self, target: MattermostEventRouter) -> bool:
+        pending = [self]
+        visited: set[int] = set()
+
+        while pending:
+            router = pending.pop()
+            router_id = id(router)
+            if router_id in visited:
+                continue
+            if router is target:
+                return True
+            visited.add(router_id)
+            pending.extend(router._routers)
+
+        return False
 
 
 class MattermostEventDispatcher(MattermostEventRouter):

@@ -23,6 +23,14 @@ class WebSocketCommand(MattermostModel):
     data: dict[str, Any] = Field(default_factory=dict)
 
 
+class WebSocketReplyError(MattermostModel):
+    id: str
+    message: str
+    detailed_error: str | None = None
+    request_id: str | None = None
+    status_code: int | None = None
+
+
 class WebSocketMessage(MattermostModel):
     event: str | None = None
     data: dict[str, Any] = Field(default_factory=dict)
@@ -30,6 +38,7 @@ class WebSocketMessage(MattermostModel):
     seq: int | None = None
     status: str | None = None
     seq_reply: int | None = None
+    error: WebSocketReplyError | None = None
 
     @property
     def is_event(self) -> bool:
@@ -51,7 +60,7 @@ class WebSocketEventBase(MattermostModel):
 
 
 class HelloEventData(MattermostModel):
-    connection_id: str
+    connection_id: str | None = None
     server_version: str
 
 

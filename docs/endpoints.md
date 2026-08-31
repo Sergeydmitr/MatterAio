@@ -18,6 +18,8 @@ these models are ignored by MatterAio.
 
 `base_url` may be a server root such as `https://mm.example.com` or a full API base ending in
 `/api/v4`. Authentication uses `Authorization: Bearer <token>` when a token is provided.
+Pagination uses zero-based `page` values and accepts `per_page` values from 1 through the
+Mattermost maximum of 200. Invalid values raise `ValueError` before a request is sent.
 
 ## REST Resources
 

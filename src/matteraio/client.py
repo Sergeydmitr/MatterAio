@@ -239,11 +239,12 @@ class MattermostClient:
             error_type = ApiError
 
         retry_after = self._parse_retry_after(response.headers.get("Retry-After"))
+        request_id = payload.request_id or response.headers.get("X-Request-Id")
         return error_type(
             message=payload.message,
             status_code=response.status_code,
             error_id=payload.id,
-            request_id=payload.request_id,
+            request_id=request_id,
             detailed_error=payload.detailed_error,
             retry_after=retry_after,
         )

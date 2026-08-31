@@ -15,6 +15,7 @@ from matteraio import (
     WebSocketMessage,
     WebSocketNotConnectedError,
     WebSocketProtocolError,
+    WebSocketReplyError,
     WebSocketTimeoutError,
     parse_websocket_event,
 )
@@ -126,6 +127,21 @@ class MattermostWebSocketClientTests(unittest.IsolatedAsyncioTestCase):
             await client.connect()
             with self.assertRaises(WebSocketProtocolError):
                 await client.receive_json()
+
+    async def test_receive_message_wraps_schema_errors_as_protocol_errors(self) -> None:
+        fake_connection = FakeWebSocketConnection(incoming=[json.dumps({"status": []})])
+
+        async def fake_connect(uri: str, **kwargs: Any) -> FakeWebSocketConnection:
+            return fake_connection
+
+        with patch("matteraio.websocket.connect", new=fake_connect):
+            client = MattermostWebSocketClient(
+                "https://mattermost.example.com",
+                "token-123",
+            )
+            await client.connect()
+            with self.assertRaisesRegex(WebSocketProtocolError, "unexpected message"):
+                await client.receive_message()
 
     async def test_reconnect_retries_with_backoff(self) -> None:
         connected = FakeWebSocketConnection(incoming=[])
@@ -283,6 +299,50 @@ class MattermostWebSocketClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event.data.connection_id, "conn-1")
         self.assertEqual(event.seq, 7)
 
+    async def test_receive_event_accepts_hello_without_connection_id(self) -> None:
+        fake_connection = FakeWebSocketConnection(
+            incoming=[
+                json.dumps(
+                    {
+                        "event": "hello",
+                        "data": {"server_version": "3.6.0"},
+                        "seq": 0,
+                    }
+                )
+            ]
+        )
+
+        async def fake_connect(uri: str, **kwargs: Any) -> FakeWebSocketConnection:
+            return fake_connection
+
+        with patch("matteraio.websocket.connect", new=fake_connect):
+            client = MattermostWebSocketClient(
+                "https://mattermost.example.com",
+                "token-123",
+            )
+            await client.connect()
+            event = cast(HelloEvent, await client.receive_event())
+
+        self.assertIsInstance(event, HelloEvent)
+        self.assertIsNone(event.data.connection_id)
+
+    async def test_receive_event_wraps_typed_event_schema_errors(self) -> None:
+        fake_connection = FakeWebSocketConnection(
+            incoming=[json.dumps({"event": "hello", "data": {}, "seq": 0})]
+        )
+
+        async def fake_connect(uri: str, **kwargs: Any) -> FakeWebSocketConnection:
+            return fake_connection
+
+        with patch("matteraio.websocket.connect", new=fake_connect):
+            client = MattermostWebSocketClient(
+                "https://mattermost.example.com",
+                "token-123",
+            )
+            await client.connect()
+            with self.assertRaisesRegex(WebSocketProtocolError, "unexpected event"):
+                await client.receive_event()
+
     async def test_receive_event_parses_posted_event(self) -> None:
         fake_connection = FakeWebSocketConnection(
             incoming=[
@@ -345,3 +405,27 @@ class MattermostWebSocketClientTests(unittest.IsolatedAsyncioTestCase):
         parsed = parse_websocket_event(message)
 
         self.assertIs(parsed, message)
+
+    def test_websocket_fail_reply_preserves_error_details(self) -> None:
+        message = WebSocketMessage.model_validate(
+            {
+                "status": "FAIL",
+                "seq_reply": 2,
+                "error": {
+                    "id": "api.websocket.invalid_action.app_error",
+                    "message": "Invalid action.",
+                    "request_id": "req-789",
+                    "status_code": 400,
+                },
+            }
+        )
+
+        self.assertEqual(
+            message.error,
+            WebSocketReplyError(
+                id="api.websocket.invalid_action.app_error",
+                message="Invalid action.",
+                request_id="req-789",
+                status_code=400,
+            ),
+        )

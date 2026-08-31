@@ -92,6 +92,16 @@ class MattermostEventRouterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(handled, 1)
         self.assertEqual(handled_events, ["posted"])
 
+    async def test_include_router_rejects_indirect_cycles(self) -> None:
+        root = MattermostEventRouter(name="root")
+        child = MattermostEventRouter(name="child")
+        grandchild = MattermostEventRouter(name="grandchild")
+        root.include_router(child)
+        child.include_router(grandchild)
+
+        with self.assertRaisesRegex(ValueError, "cycle"):
+            grandchild.include_router(root)
+
     async def test_dispatch_next_receives_event_from_websocket_client(self) -> None:
         dispatcher = MattermostEventDispatcher()
         received: list[str] = []

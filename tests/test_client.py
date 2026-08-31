@@ -5,6 +5,7 @@ import unittest
 import httpx
 
 from matteraio import (
+    ApiError,
     AuthError,
     MattermostClient,
     MattermostError,
@@ -102,6 +103,30 @@ class MattermostClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(exc_info.exception.status_code, 401)
         self.assertEqual(exc_info.exception.error_id, "api.context.session_expired.app_error")
         self.assertEqual(exc_info.exception.request_id, "req-123")
+
+    async def test_api_error_uses_request_id_header_when_payload_omits_it(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                404,
+                headers={"X-Request-Id": "req-header"},
+                json={
+                    "id": "api.context.not_found.app_error",
+                    "message": "Not found.",
+                    "status_code": 404,
+                },
+            )
+
+        transport = httpx.MockTransport(handler)
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            with self.assertRaises(ApiError) as exc_info:
+                await client.users.me()
+
+        self.assertEqual(exc_info.exception.request_id, "req-header")
 
     async def test_response_validation_error_includes_request_context(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:

@@ -34,18 +34,22 @@ Typed events currently include `hello`, `posted`, and `status_change`.
 | `seq` | `int or None` | Sequence number from Mattermost. |
 | `status` | `str or None` | Reply status for command responses. |
 | `seq_reply` | `int or None` | Sequence number of the command being answered. |
+| `error` | `WebSocketReplyError or None` | Structured error details for a `FAIL` reply. |
 
 `receive_event(...)` returns a typed event for supported event names, otherwise the generic
 `WebSocketMessage`.
 
 | Event class | `event` | Data fields |
 | --- | --- | --- |
-| `HelloEvent` | `hello` | `connection_id`, `server_version` |
+| `HelloEvent` | `hello` | optional `connection_id`, `server_version` |
 | `PostedEvent` | `posted` | `post`, `mentions`, `channel_display_name`, `channel_name`, `channel_type`, `sender_name`, `set_online`, `team_id` |
 | `StatusChangeEvent` | `status_change` | `status`, `user_id` |
 
 `send_command(...)`, `authenticate(...)`, and `ping(...)` return plain values: command sequence
 numbers as `int`, and ping latency as `float`.
+
+Invalid JSON, message schemas, and typed event payloads are consistently reported as
+`WebSocketProtocolError`.
 
 ## Examples
 
@@ -96,7 +100,7 @@ dispatcher.include_router(posts)
 | `router.on(selector, *filters)` | Register an async handler by event class, event name, or `None` for all messages. |
 | `router.event(selector, *filters)` | Alias for `router.on(...)`. |
 | `router.register(callback, selector=..., filters=...)` | Register a handler without decorator syntax. |
-| `router.include_router(router)` | Attach a child router. |
+| `router.include_router(router)` | Attach a child router; direct and indirect cycles are rejected. |
 | `router.dispatch(event)` | Dispatch one already-received event and return the number of handlers called. |
 | `dispatcher.feed_event(event)` | Alias-style entry point for dispatching one event. |
 | `dispatcher.dispatch_next(client, timeout=None)` | Read one event from `MattermostWebSocketClient` and dispatch it. |

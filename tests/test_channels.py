@@ -39,6 +39,17 @@ def _channel_member_payload(
 
 
 class ChannelsResourceTests(unittest.IsolatedAsyncioTestCase):
+    async def test_pagination_rejects_values_above_mattermost_limit(self) -> None:
+        transport = httpx.MockTransport(lambda request: httpx.Response(500))
+
+        async with MattermostClient(
+            "https://mattermost.example.com",
+            "token-123",
+            transport=transport,
+        ) as client:
+            with self.assertRaisesRegex(ValueError, "less than or equal to 200"):
+                await client.channels.list("team-1", per_page=201)
+
     async def test_get_channel_returns_typed_channel(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:
             self.assertEqual(request.method, "GET")

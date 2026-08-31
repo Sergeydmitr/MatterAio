@@ -6,6 +6,7 @@ from json import JSONDecodeError
 from types import TracebackType
 from typing import Any, NoReturn
 
+from pydantic import ValidationError
 from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import ConnectionClosed, InvalidURI, WebSocketException
 
@@ -197,14 +198,26 @@ class MattermostWebSocketClient:
         return decoded
 
     async def receive_message(self, *, timeout: float | None = None) -> WebSocketMessage:
-        return WebSocketMessage.model_validate(await self.receive_json(timeout=timeout))
+        payload = await self.receive_json(timeout=timeout)
+        try:
+            return WebSocketMessage.model_validate(payload)
+        except ValidationError as exc:
+            raise WebSocketProtocolError(
+                "Mattermost WebSocket returned an unexpected message."
+            ) from exc
 
     async def receive_event(
         self,
         *,
         timeout: float | None = None,
     ) -> TypedWebSocketEvent | WebSocketMessage:
-        return parse_websocket_event(await self.receive_message(timeout=timeout))
+        message = await self.receive_message(timeout=timeout)
+        try:
+            return parse_websocket_event(message)
+        except ValidationError as exc:
+            raise WebSocketProtocolError(
+                "Mattermost WebSocket returned an unexpected event."
+            ) from exc
 
     def _next_seq(self) -> int:
         self._seq += 1
